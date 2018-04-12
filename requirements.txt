@@ -1,0 +1,10 @@
+flask
+flask-cors
+flask-sqlalchemy
+flask-restful
+marshmallow
+marshmallow-sqlalchemy
+pytest
+pymysql
+Flask-JWT
+bcrypt
