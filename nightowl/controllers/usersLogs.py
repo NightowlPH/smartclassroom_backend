@@ -20,7 +20,7 @@ class activeUsers(Resource):
 				data['last_request_time'] = datetime.strftime(queried_user.last_request_time,'%Y-%m-%d %I:%M %p')
 				data['time_login'] = datetime.strftime(queried_user.time_login,'%Y-%m-%d %I:%M %p')
 				active_user.append(data)
-			return {"users": active_user, 'token': current_user['token']}
+			return {"users": active_user}
 		else:
 			return 401
 
@@ -29,9 +29,7 @@ class delActiveUser(Resource):
 	def delete(current_user, self, id):		
 		if current_user['userType'] == "Admin":
 			UsersLogs.query.filter_by(id = id).delete()
-			db.session.commit()
-			print("--==",current_user['token'])
-			return {"token": current_user['token']}
+			db.session.commit()			
 		else:
 			return 401 
 

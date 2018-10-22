@@ -22,7 +22,7 @@ class rooms(Resource):
 				data = room_schema.dump(queried_room).data
 				data['groups'] = GroupAccess.query.filter_by(room_id = queried_room.id).count()	
 				allRoom.append(data)
-			return {"rooms": allRoom, "token": current_user['token']}
+			return {"rooms": allRoom}
 		else:
 			return 401
 
@@ -30,13 +30,12 @@ class rooms(Resource):
 	def post(current_user, self):	
 		if current_user['userType'] == "Admin":
 			Request = request.get_json()		
-			addRoom = room_schema.load(Request, session = db.session).data
+			addRoom = room_schema.load(Request, session = db.session).data			
 			if Room.query.filter_by(name = addRoom.name).count() == 0:
 				db.session.add(addRoom)
-				db.session.commit()	
-				return {"token": current_user['token']}		
+				db.session.commit()												
 			else:
-				return {"message": "already exist", "token": current_user['token']}
+				return {"message": "already exist"}
 		else:
 			return 401
 
@@ -47,9 +46,9 @@ class room(Resource):
 			query = Room.query.filter_by(id = id)	
 			if query.count() != 0:
 				room = room_schema.dump(query.first()).data
-				return {"data":room, "token": current_user['token']}
+				return {"data":room}
 			else:
-				return {"data": [], "token": current_user['token']}
+				return {"data": []}
 		else:
 			return 402
 
@@ -63,7 +62,7 @@ class room(Resource):
 				GroupAccess.query.filter_by(group_id = id).delete()			
 			Room.query.filter_by(id = id).delete()
 			db.session.commit()
-			return {"response":'user successfully deleted', "token": current_user['token']}
+			return {"response":'user successfully deleted'}
 		else:
 			return 401
 
@@ -74,13 +73,12 @@ class room(Resource):
 
 			query = Room.query.filter_by(name = request_data['name'])
 			if query.count() > 0 and int(id) != query.first().id:
-				return{"message": "room already exist", "token": current_user['token']}
+				return{"message": "room already exist"}
 			else:
 				query = Room.query.filter_by(id = id).one()
 				query.name = request_data['name']
 				query.description = request_data['description']
-				db.session.commit()
-				return {"token": current_user['token']}
+				db.session.commit()				
 		else:
 			return 401
 

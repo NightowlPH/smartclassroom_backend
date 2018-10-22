@@ -25,7 +25,7 @@ class users(Resource):
 			users = Users.query.filter(Users.username != current_user['username']).all()				
 			for queried_user in users:		
 				allUser.append(users_schema.dump(queried_user).data)
-			return { "users": allUser, "token": current_user['token'] }						
+			return { "users": allUser }						
 		else:			
 			return 401
 		
@@ -34,17 +34,17 @@ class users(Resource):
 		if current_user['userType'] == "Admin":	
 			Request = request.get_json()	
 			if not Request['username'] and not Request['userpassword'] and not Request['Lname'] and not Request['Fname'] and not Request['cardID']:
-				return {"message": "some parameters is missing", "token": current_user['token']}
+				return {"message": "some parameters is missing"}
 			if len(Request['userpassword']) < 10:
-				return {"message": "password must be more than 10 characters", "token": current_user['token']} 					
+				return {"message": "password must be more than 10 characters"} 					
 			if Users.query.filter_by(username = Request['username']).count() == 0: #CHECK IF USER ALREADY EXIST
 				addUser = Users(username = Request['username'], userpassword = bcrypt.hashpw(Request['userpassword'].encode('UTF-8'), bcrypt.gensalt()),
 				                Lname = Request['Lname'], Fname = Request['Fname'], cardID = Request['cardID'])
 				db.session.add(addUser)
 				db.session.commit()			
-				return {"message": "success", "token": current_user['token']}, 200
+				return {"message": "success"}, 200
 			else:
-				return {'message': 'already exist', "token": current_user['token']}
+				return {'message': 'already exist'}
 		else:
 			return 401
 
@@ -79,16 +79,14 @@ class user(Resource):
 	def delete(current_user, self, id):		
 		if current_user['userType'] == "Admin":
 			if UsersLogs.query.filter_by(username = Users.query.filter_by(id = id).first().username).first():
-				return {"message": "user is currently login", "token": current_user['token']}			
+				return {"message": "user is currently login"}			
 			members = GroupMember.query.filter_by(user_id = id)	
 			users = Users.query.filter_by(id = id)	
 			if members.count() != 0:
 				members.delete()			
 			if users.count() == 1:
 				users.delete()			
-			db.session.commit()
-			return {"token": current_user['token']}
-			return {"token": current_user['token']}
+			db.session.commit()			
 		else:
 			return 401
 
@@ -98,9 +96,9 @@ class user(Resource):
 			query = Users.query.filter_by(id = id)
 			if query.count() != 0:
 				user = users_schema.dump(query.first()).data		
-				return {"data": user, "token": current_user['token']}
+				return {"data": user}
 			else:
-				return {"response": "no user found", "token": current_user['token']}		
+				return {"response": "no user found"}		
 		else:			
 			return 401
 
@@ -112,10 +110,10 @@ class user(Resource):
 			query2 = Users.query.filter_by(cardID = data['cardID'])
 
 			if query.count() > 0 and query.first().id != int(id):
-				return { "message": "username already exist", "token": current_user['token']}
+				return { "message": "username already exist"}
 
 			elif query2.count() > 0 and query2.first().id != int(id):				
-				return { "message": "cardID already exist", "token": current_user['token']}
+				return { "message": "cardID already exist"}
 
 			else:
 				query = Users.query.filter_by(id = id).one()
@@ -123,8 +121,7 @@ class user(Resource):
 				query.Lname = data['Fname']
 				query.Lname = data['Lname']
 				query.cardID = data['cardID']
-				db.session.commit()
-				return {"token": current_user['token']}, 201			
+				db.session.commit()				
 		else:
 			return 401
 		
@@ -147,7 +144,7 @@ class getUserProfile(Resource):	# THIS IS IN SIDEBAR HEADER
 			group = Group.query.filter_by(id = member.group_id).first()			
 			data = users_schema.dump(user).data
 			if group.name[len(group.name)-1] == 's' or group.name[len(group.name)-1] == 'S':
-				data['group_nameu'] = group.name[0:len(group.name)-1]
+				data['group_name'] = group.name[0:len(group.name)-1]
 			else:
 				data['group_name'] = group.name
 			if active_user == None or user == None:
@@ -172,14 +169,14 @@ class changePassword(Resource):
 			if user == None:
 				return 401		
 			if len(data['new_password']) < 10:
-				return {"message": "password must be more than 10 characters", "token": current_user['token']} 		
+				return {"message": "password must be more than 10 characters"} 		
 			password = bcrypt.hashpw(data['current_password'].encode('UTF-8'), user.first().userpassword.encode('UTF-8'))
 			if user.first().userpassword.encode('UTF-8') != password:
-				return {'message': 'invalid password', 'token' : current_user['token']}
+				return {'message': 'invalid password'}
 			new_password = bcrypt.hashpw(data['new_password'].encode('UTF-8'), bcrypt.gensalt())
 			user.one().userpassword = new_password
 			db.session.commit()
-			return {'message': 'your password is successfully change', 'token' : current_user['token']}
+			return {'message': 'your password is successfully change'}
 		else:
 			return 401
 

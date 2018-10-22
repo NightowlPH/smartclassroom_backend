@@ -39,7 +39,7 @@ class auditTrail(Resource):
 				auditTrail['action'] = queried_auditTrail.action
 				auditTrail['id'] = queried_auditTrail.id
 				all_data.append(auditTrail)
-			return {"auditTrail": all_data, "token": current_user['token']}
+			return {"auditTrail": all_data}
 		else:
 			return 401
 
@@ -49,7 +49,6 @@ class deleteAuditTrail(Resource):
 		if current_user['userType'] == "Admin":
 			AuditTrail.query.filter_by(id = id).delete()
 			db.session.commit()
-			return {"token": current_user['token']}
 		else: 
 			return 401
 
@@ -59,6 +58,5 @@ class delAllAuditTrail(Resource):
 		if current_user['userType'] == "Admin":
 			AuditTrail.query.delete()
 			db.session.commit()
-			return {"token": current_user['token']}
 		else:
 			return 401

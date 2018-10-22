@@ -8,7 +8,7 @@ from .models.groupMember import GroupMember
 from .models.room import Room
 from .models.groupAccess import GroupAccess
 from .models.roomStatus import RoomStatus
-from .models.deviceType import DeviceType
+from .models.devices import Devices
 from datetime import datetime
 from .models.usersLogs import UsersLogs
 

@@ -27,22 +27,20 @@ class login(Resource):
 			token = request.headers['x-access-token']           						
 			try:
 				data = jwt.decode(token, app.config['SECRET_KEY'])  
-				user_log = UsersLogs.query.filter_by(username = data['username'])
+				user_log = UsersLogs.query.filter_by(username = data['username'], public_id = data['public_id'])
 				user = Users.query.filter_by(username = data['username'])
-				if user.count() != 0:    
-					if user_log.first().last_request_time + timedelta(minutes = 30) <  datetime_now:     	            	
-						update_active_user(public_id, datetime_now, user_log.one())
-						userType = get_user_type(user.id)
-						token = jwt.encode({'username': data['username'], 'public_id' : public_id, 'exp': datetime_now + timedelta(days = 1)}, app.config['SECRET_KEY'])
-						token = token.decode('UTF-8')
-						return {"token": token, 'userType': userType}
-					else:
-						return {"message": "your token has been expired"}
-				else:
+				if user.count() == 0:
 					return 401
+				if user_log.count() == 0:
+					return {"message": "user already logout"}
+				elif user_log.first().status != "active":
+					return {"message": "user already logout"}
+				token = jwt.encode({'username': data['username'], 'public_id' : public_id, 'exp': datetime_now + timedelta(days = 1)}, app.config['SECRET_KEY'])
+				token = token.decode('UTF-8')
+				userType = get_user_type(user.first().id)
+				return {"token": token, 'userType': userType}
 			except Exception as error:   
-				error = str(error) 
-				print(error)       	            
+				error = str(error) 				       	           
 				if error == "Signature has expired":					
 					return {"message": "your token has been expired"}					
 				else:

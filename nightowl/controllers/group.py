@@ -25,7 +25,7 @@ class groups(Resource):
 				permission = Permission.query.filter_by(id = queried_group.permission_id).first()
 				data['permission_name'] = permission.name
 				allGroup.append(data)
-			return {"groups":allGroup, "token": current_user['token']}		
+			return {"groups":allGroup}		
 		else:
 			return 401
 
@@ -39,10 +39,9 @@ class groups(Resource):
 				group = Group(name = data['name'], description = data['description'])			
 				group.permission = Permission.query.filter_by(id = int(data['permission_id'])).first()	
 				db.session.add(group)
-				db.session.commit()
-				return {"token": current_user['token']}
+				db.session.commit()				
 			else:
-				return {"message": "already exist", "token": current_user['token']}	
+				return {"message": "already exist"}	
 		else:
 			return 401	
 
@@ -57,7 +56,7 @@ class group(Resource):
 				GroupAccess.query.filter_by(group_id = id).delete()			
 			Group.query.filter_by(id = id).delete()
 			db.session.commit()
-			return {"response":'user successfully deleted', "token": current_user['token']}			
+			return {"response":'user successfully deleted'}			
 		else:
 			return 401
 
@@ -70,9 +69,9 @@ class group(Resource):
 				group = groups_schema.dump(query.first()).data
 				permission = Permission.query.filter_by(id = group['permission_id']).first()
 				group['permission_name'] = permission.name
-				return {"data": group, "token": current_user['token']}
+				return {"data": group}
 			else:
-				return {"data": [], "token": current_user['token']}
+				return {"data": []}
 		else:
 			return 401		
 
@@ -82,16 +81,15 @@ class group(Resource):
 			request_data = request.get_json()			
 			query = Group.query.filter_by(name = request_data['name'])
 			if query.count() > 0 and int(id) != query.first().id:
-				return{"message": "group already exist", "token": current_user['token']}
+				return{"message": "group already exist"}
 			if Permission.query.filter_by(id = request_data['permission_id']).first() == None:
-				return{"message": "permission type does not exit", "token": current_user['token']}
+				return{"message": "permission type does not exit"}
 			else:
 				query = Group.query.filter_by(id = id).one()
 				query.name = request_data['name']
 				query.description = request_data['description']
 				query.permission_id = Permission.query.filter_by(id = request_data['permission_id']).first().id
-				db.session.commit()
-				return {"token": current_user['token']}
+				db.session.commit()				
 		else:
 			return 401
 

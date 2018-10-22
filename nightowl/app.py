@@ -12,9 +12,9 @@ if app.config['DEBUG']:
 
 
 from nightowl.controllers.auditTrail import auditTrail,deleteAuditTrail, delAllAuditTrail
-from nightowl.controllers.deviceType import deviceType
+from nightowl.controllers.devices import devices, device
 from nightowl.controllers.login import login,logout
-from nightowl.controllers.roomStatus import roomStatus
+from nightowl.controllers.roomStatus import roomStatus, RoomStatusByID, AddDeviceToRoom
 from nightowl.controllers.users import user, users, getUserProfile, editProfile, changePassword
 from nightowl.controllers.permission import permission, permissions, getAllPer
 from nightowl.controllers.group import groups, group, groupDetails
@@ -25,6 +25,10 @@ from nightowl.checkTag.checkTag import check_tag
 from nightowl.controllers.routeGuard import routeGuard
 from nightowl.controllers.register import register
 from nightowl.controllers.usersLogs import activeUsers, delActiveUser
+
+from nightowl.models.roomStatus import RoomStatus
+from nightowl.models.room import Room
+from nightowl.models.devices import Devices
 
 api.add_resource(login, '/login')
 api.add_resource(logout, '/logout')
@@ -66,6 +70,13 @@ api.add_resource(routeGuard, '/routeGuard')
 api.add_resource(getUserProfile,'/getUserProfile')
 api.add_resource(register, '/register')
 api.add_resource(changePassword, '/changeUserPassword')
+
+api.add_resource(devices, '/devices')
+api.add_resource(device, '/device/<int:id>')
+
+api.add_resource(roomStatus, '/RoomStatus')
+api.add_resource(RoomStatusByID, '/roomStatus/<int:room_status_id>')
+api.add_resource(AddDeviceToRoom, '/addRoomDevice/<int:room_id>')
 
 
 db.create_all()

@@ -22,7 +22,7 @@ class permissions(Resource):
 			permission = Permission.query.all()
 			for queried_permission in permission:
 				allPermission.append(permission_schema.dump(queried_permission).data)
-			return {"permissions": allPermission, "token": current_user['token']}
+			return {"permissions": allPermission}
 		else:
 			return 401
 
@@ -35,10 +35,9 @@ class permissions(Resource):
 			addPermission = permissions_schema.load(Request, session = db.session).data		
 			if Permission.query.filter_by(name = addPermission.name).count() == 0:
 				db.session.add(addPermission)
-				db.session.commit()
-				return {"token": current_user['token']}, 201
+				db.session.commit()				
 			else:
-				return {"message": "already exist", "token": current_user['token']}	
+				return {"message": "already exist"}	
 		else:
 			return 401	
 
@@ -50,7 +49,7 @@ class permission(Resource):
 				GroupAccess.query.filter_by(user_id = id).delete()			
 			Permission.query.filter_by(id = id).delete()
 			db.session.commit()
-			return {"response":'permission successfully deleted', "token": current_user['token']}
+			return {"response":'permission successfully deleted'}
 		else:
 			return 401
 
@@ -62,9 +61,9 @@ class permission(Resource):
 
 			if query.count() != 0:
 				permission = permission_schema.dump(query.first()).data
-				return {"data": permission, "token": current_user['token']}
+				return {"data": permission}
 			else:
-				return {"data": [], "token": current_user['token']}	
+				return {"data": []}	
 		else:
 			return 401
 
@@ -75,13 +74,12 @@ class permission(Resource):
 
 			query = Permission.query.filter_by(name = request_data['name'])
 			if query.count() > 0 and int(id) != query.first().id:
-				return{"message": "permission already exist", "token": current_user['token']}
+				return{"message": "permission already exist"}
 			else:
 				query = Permission.query.filter_by(id = id).one()
 				query.name = request_data['name']
 				query.description = request_data['description']
-				db.session.commit()
-				return {"token": current_user['token']}, 201
+				db.session.commit()				
 		else:
 			return 401
 

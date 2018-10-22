@@ -8,3 +8,4 @@ pytest
 pymysql
 Flask-JWT
 bcrypt
+flask-mqtt

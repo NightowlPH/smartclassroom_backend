@@ -24,16 +24,25 @@ def token_required(f):
             return jsonify({'message' : 'token is missing'})                
 
         # try:            
-        data = jwt.decode(token, app.config['SECRET_KEY'])                       
-        user_log = UsersLogs.query.filter_by(public_id = data['public_id'],username = data['username'])        
+        data = jwt.decode(token, app.config['SECRET_KEY'])  
+        print("=====",data)               
+        query = UsersLogs.query.filter_by(public_id = data['public_id'],username = data['username'])        
         user = Users.query.filter_by(username =data['username'])            
-        if user.count() == 0 and user_log.count() == 0: # CHECK IF USER EXIST
+        if user.count() == 0 and query.count() == 0: # CHECK IF USER EXIST
             return 401
-        elif user.count() == 1 and user_log.count() == 1:            
-            userType = get_user_type(user.first().id)                                                        
-            user_log.one().last_request_time = datetime.strptime(datetime.strftime(datetime.today(),'%Y-%m-%d %I:%M %p'),'%Y-%m-%d %I:%M %p')
+        elif user.count() == 1 and query.count() == 1:
+            public_id = str(uuid.uuid4())
+            userType = get_user_type(user.first().id)
+            datetime_now = datetime.strptime(datetime.strftime(datetime.today(),'%Y-%m-%d %I:%M %p'),'%Y-%m-%d %I:%M %p')
+            token = jwt.encode({'username': user.first().username, 'public_id' : public_id, 'exp': datetime_now}, app.config['SECRET_KEY'])
+            token = token.decode('UTF-8')
+            if url.find("routeGuard") != -1 or url.find("shwNotGrpAccess") != -1 or url.find('groupDetails') != -1 or url.find('roomDetails') != -1: 
+                return f(userType, *args, **kwargs)
+            user_details = {"userType": userType, "token": token, 'username': user.first().username}                                  
+            query.one().last_request_time = datetime_now
+            query.one().public_id = public_id 
             db.session.commit()
-            return f({"userType": userType,'username': user.first().username}, *args, **kwargs) 
+            return f(user_details, *args, **kwargs) 
         else:
             return 401                                       
         # except Exception as error:   

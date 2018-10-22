@@ -25,7 +25,7 @@ class groupAccess(Resource):
 				"groupName": Group.query.filter_by(id = queried_access.group_id).first().name,
 				"permissionName": Permission.query.filter_by(id = queried_access.permission_id).first().name,
 				"users": GroupMember.query.filter_by(group_id = queried_access.group_id).count()})		
-			return {"group": groupAccess, "token": current_user['token']}
+			return {"group": groupAccess}
 		else:
 			return 401
 
@@ -39,8 +39,7 @@ class groupAccess(Resource):
 				roomAccess.group = Group.query.filter_by(id = data['group_id']).first()
 				roomAccess.permission = Permission.query.filter_by(id = data['permission_id']).first()
 				db.session.add(roomAccess)
-				db.session.commit()
-			return {"token": current_user['token']}
+				db.session.commit()			
 		else:
 			return 401
 
@@ -69,10 +68,9 @@ class deleteGrpAccess(Resource):
 			query = GroupAccess.query.filter_by(id = id)		
 			if query.count() == 1:
 				query.delete()
-				db.session.commit()
-				return {"token": current_user['token']}
+				db.session.commit()				
 			else:
-				return {"message": "group not found", "token": current_user['token']}
+				return {"message": "group not found"}
 		else:
 			return 401
 

@@ -20,7 +20,7 @@ class groupMember(Resource):
 			query = GroupMember.query.filter_by(group_id = id).all()
 			for queried_member in query:
 				allUser.append(users_schema.dump(Users.query.filter_by(id = queried_member.user_id).first()).data)			
-			return {"members":allUser, "token": current_user['token']}		
+			return {"members":allUser}		
 		else:
 			return 401
 
@@ -34,8 +34,7 @@ class groupMember(Resource):
 						member.group = Group.query.filter_by(id = id).first()
 						member.user = Users.query.filter_by(id = data).first()
 						db.session.add(member)
-						db.session.commit()						
-				return {"token": current_user['token']}
+						db.session.commit()										
 			else:
 				return 401							
 		else:
@@ -51,7 +50,7 @@ class shwNotMem(Resource):
 			for queried_user in query:					
 				if GroupMember.query.filter_by(group_id = id, user_id  = queried_user.id).count() == 0:
 					allUser.append(users_schema.dump(queried_user).data)
-			return {"members": allUser, "token": current_user['token']}		
+			return {"members": allUser}		
 		else:
 			return 401
 
@@ -61,8 +60,7 @@ class deleteMember(Resource):
 	def delete(current_user, self, id, user_id):
 		if current_user['userType'] == "Admin":			
 			GroupMember.query.filter_by(group_id = id, user_id = user_id).delete()
-			db.session.commit()
-			return {"token": current_user['token']}
+			db.session.commit()			
 		else: 
 			return 401	
 
