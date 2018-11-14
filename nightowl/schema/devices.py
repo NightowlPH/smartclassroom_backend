@@ -5,4 +5,4 @@ class DevicesSchema(ModelSchema):
 	class Meta:
 		model = Devices
 
-devices_schema = DevicesSchema(only = ('id', 'name', 'description'))
+devices_schema = DevicesSchema(only = ('id', 'name', 'description', 'remote_design_id'))

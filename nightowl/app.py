@@ -3,8 +3,9 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_restful import Resource, Api
 from flask_cors import CORS, cross_origin
 
-app = Flask(__name__)
-app.config.from_object('instance.config')
+app = Flask('nightowl', instance_relative_config=True)
+app.config.from_object('config')
+app.config.from_pyfile('config.py')
 db = SQLAlchemy(app)
 api = Api(app)
 if app.config['DEBUG']:
@@ -12,6 +13,7 @@ if app.config['DEBUG']:
 
 
 from nightowl.controllers.auditTrail import auditTrail,deleteAuditTrail, delAllAuditTrail
+from nightowl.controllers.remoteDesign import AllRemoteDesign
 from nightowl.controllers.devices import devices, device
 from nightowl.controllers.login import login,logout
 from nightowl.controllers.roomStatus import roomStatus, RoomStatusByID, AddDeviceToRoom
@@ -25,10 +27,6 @@ from nightowl.checkTag.checkTag import check_tag
 from nightowl.controllers.routeGuard import routeGuard
 from nightowl.controllers.register import register
 from nightowl.controllers.usersLogs import activeUsers, delActiveUser
-
-from nightowl.models.roomStatus import RoomStatus
-from nightowl.models.room import Room
-from nightowl.models.devices import Devices
 
 api.add_resource(login, '/login')
 api.add_resource(logout, '/logout')
@@ -77,6 +75,8 @@ api.add_resource(device, '/device/<int:id>')
 api.add_resource(roomStatus, '/RoomStatus')
 api.add_resource(RoomStatusByID, '/roomStatus/<int:room_status_id>')
 api.add_resource(AddDeviceToRoom, '/addRoomDevice/<int:room_id>')
+
+api.add_resource(AllRemoteDesign, '/remoteDesign')
 
 
 db.create_all()

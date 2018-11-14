@@ -52,7 +52,8 @@ class login(Resource):
 		else:			
 			user = Users.query.filter_by(username = Request['username'])
 			if user.count() == 1: # CHECK IF USERNAME EXIST IN THE DATABASE	
-				password = bcrypt.hashpw(Request['password'].encode('UTF-8'), user.first().userpassword.encode('UTF-8'))												
+				password = bcrypt.hashpw(Request['password'].encode('UTF-8'), user.first().userpassword.encode('UTF-8'))
+				print(user.first().userpassword.encode('UTF-8'), password)												
 				if user.first().userpassword.encode('UTF-8') == password: # CHECK IF PASSWORD IS CORRECT
 					userType = get_user_type(user.first().id)			
 					print(userType)		

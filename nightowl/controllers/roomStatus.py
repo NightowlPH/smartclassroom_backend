@@ -8,6 +8,7 @@ from datetime import datetime
 from nightowl.models.roomStatus import RoomStatus
 from nightowl.models.room import Room
 from nightowl.models.devices import Devices
+from nightowl.models.remoteDesign import RemoteDesign
 
 
 class roomStatus(Resource): # for angular frontend app
@@ -28,11 +29,18 @@ class roomStatus(Resource): # for angular frontend app
 				data['add_device'] = add_device
 				for queried_room_device in room_device.all():
 					device = Devices.query.filter_by(id = queried_room_device.device_id).first()
+					remote_design = RemoteDesign.query.filter_by(id = device.remote_design_id).first()
+					class_name = ""
+					if remote_design.name == "Switch2":
+						class_name = "Door"					
 					data['devices'].append({
 							"device_id": queried_room_device.device_id,
 							"device_name": device.name,
 							"device_status": queried_room_device.status,
-							"room_status_id": queried_room_device.id
+							"room_status_id": queried_room_device.id,
+							"remote_design": remote_design.name,
+							"remote_design_id": remote_design.id,
+							"class_name": class_name
 						})
 				all_data["room_status"].append(data)
 			return all_data

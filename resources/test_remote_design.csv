@@ -1,0 +1,3 @@
+Switch>On or off remote>{default_status:off}
+Switch2>Open or Close remote>{default_status:off}
+Temperature Slider> Range tempareture slider>{min:16,max:30,from:20,postfix: "°",prettify: false,hasGrid: true,disable: false,}

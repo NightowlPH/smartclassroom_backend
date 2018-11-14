@@ -6,6 +6,7 @@ from flask_restful import Resource
 
 from nightowl.models.devices import Devices
 from nightowl.models.roomStatus import RoomStatus
+from nightowl.models.remoteDesign import RemoteDesign
 
 from nightowl.schema.devices import devices_schema
 
@@ -17,7 +18,13 @@ class devices(Resource):
 			all_devices = []
 			devices = Devices.query.all()
 			for device in devices:
-				all_devices.append(devices_schema.dump(device).data)
+				data = devices_schema.dump(device).data
+				remote_design = RemoteDesign.query.filter_by(id = device.remote_design_id).first()
+				if remote_design == None:
+					data['remote_design'] = None
+				else:
+					data['remote_design'] = remote_design.name								
+				all_devices.append(data)
 			return {'devices': all_devices}
 		else:
 			return 401
@@ -25,13 +32,13 @@ class devices(Resource):
 	@token_required
 	def post(current_user, self):
 		if current_user['userType'] == "Admin":
-			Request = request.get_json()	
-			addDevice = devices_schema.load(Request, session = db.session).data		
-			if Devices.query.filter_by(name = addDevice.name).count() == 0:
-				db.session.add(addDevice)
-				db.session.commit()
-			else:
-				return {"message": "already exist", "token": current_user['token']}	
+			Request = request.get_json()
+			if Devices.query.filter_by(name = Request['name']).count() != 0:
+				return {"message": "already exist"}						
+			addDevice = Devices(name = Request['name'],description = Request['description'])
+			addDevice.remote_design = RemoteDesign.query.filter_by(id = Request['remote_design_id']).first()					
+			db.session.add(addDevice)
+			db.session.commit()			
 		else:
 			return 401
 
@@ -56,6 +63,7 @@ class device(Resource):
 
 			if query.count() != 0:
 				device = devices_schema.dump(query.first()).data
+				device['remote_design'] = RemoteDesign.query.filter_by(id = device['remote_design_id']).first().name
 				return {"data": device}
 			else:
 				return {"data": []}	
@@ -66,6 +74,7 @@ class device(Resource):
 	def put(current_user, self, id):
 		if current_user['userType'] == "Admin":
 			request_data = request.get_json()
+			print(request_data)
 
 			query = Devices.query.filter_by(name = request_data['name'])
 			if query.count() > 0 and int(id) != query.first().id:
@@ -74,6 +83,7 @@ class device(Resource):
 				query = Devices.query.filter_by(id = id).one()
 				query.name = request_data['name']
 				query.description = request_data['description']
+				query.remote_design_id = RemoteDesign.query.filter_by(id = request_data['remote_design_id']).first().id
 				db.session.commit()				
 		else:
 			return 401
