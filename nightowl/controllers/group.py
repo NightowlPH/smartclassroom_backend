@@ -96,7 +96,7 @@ class group(Resource):
 class groupDetails(Resource): # THIS IS USER IN NAVBAT
 	@token_required
 	def get(current_user, self, id):		
-		if current_user == "Admin" or current_user == "User":		
+		if current_user['userType'] == "Admin" or current_user['userType'] == "User":		
 			groups_schema = GroupSchema(only=('id','name', 'description'))			
 			query = Group.query.filter_by(id = id)
 			if query.count() != 0:

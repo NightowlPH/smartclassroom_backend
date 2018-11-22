@@ -2,6 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_restful import Resource, Api
 from flask_cors import CORS, cross_origin
+from flask_mqtt import Mqtt
 
 app = Flask('nightowl', instance_relative_config=True)
 app.config.from_object('config')
@@ -10,6 +11,37 @@ db = SQLAlchemy(app)
 api = Api(app)
 if app.config['DEBUG']:
 	CORS(app)
+
+# app.config['MQTT_BROKER_URL'] = 'localhost'
+# app.config['MQTT_BROKER_PORT'] = 1883
+# app.config['MQTT_USERNAME'] = 'mark'
+# app.config['MQTT_PASSWORD'] = 'pass'
+# app.config['MQTT_REFRESH_TIME'] = 1.0  # refresh time in seconds
+# mqtt = Mqtt(app)
+
+# @mqtt.on_connect()
+# def handle_connect(client, userdata, flags, rc):
+#     mqtt.subscribe('test')
+
+# @mqtt.on_message()
+# def handle_mqtt_message(client, userdata, message):
+#     data = dict(
+#         topic=message.topic,
+#         payload=message.payload.decode()
+#     )
+#     print("DATA",data)    
+
+
+# @mqtt.on_log()
+# def handle_logging(client, userdata, level, buf):
+#     print(level, buf)
+
+# class AllRoomStatus(Resource):
+# 	def get(self):
+# 		mqtt.publish("test","-----------------------HELLO----------------------------")
+# 		return {"message": "yes"}
+
+# api.add_resource(AllRoomStatus, '/test')
 
 
 from nightowl.controllers.auditTrail import auditTrail,deleteAuditTrail, delAllAuditTrail

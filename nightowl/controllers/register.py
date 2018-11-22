@@ -15,7 +15,7 @@ class register(Resource):
 			return {"message": "password must be more than 10 characters"} 					
 		if Users.query.filter_by(username = Request['username']).count() == 0: #CHECK IF USER ALREADY EXIST
 			addUser = Users(username = Request['username'], userpassword = bcrypt.hashpw(Request['userpassword'].encode('UTF-8'), bcrypt.gensalt()),
-			Lname = Request['Lname'], Fname = Request['Fname'], cardID = Request['cardID'], public_id = str(uuid.uuid4()) )
+			Lname = Request['Lname'], Fname = Request['Fname'], cardID = Request['cardID'])
 			db.session.add(addUser)
 			db.session.commit()			
 			return {"response": "success"}

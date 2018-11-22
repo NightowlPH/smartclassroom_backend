@@ -8,7 +8,7 @@ from nightowl.models.room import Room
 from nightowl.models.devies import Devices
 
 app.config['MQTT_BROKER_URL'] = 'localhost'
-app.config['MQTT_BROKER_PORT'] = 1883
+app.config['MQTT_BROKER_PORT'] = ''
 app.config['MQTT_USERNAME'] = 'mark'
 app.config['MQTT_PASSWORD'] = 'passmord567'
 app.config['MQTT_REFRESH_TIME'] = 1.0  # refresh time in seconds

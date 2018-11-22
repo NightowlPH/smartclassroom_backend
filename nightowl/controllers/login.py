@@ -52,17 +52,14 @@ class login(Resource):
 		else:			
 			user = Users.query.filter_by(username = Request['username'])
 			if user.count() == 1: # CHECK IF USERNAME EXIST IN THE DATABASE	
-				password = bcrypt.hashpw(Request['password'].encode('UTF-8'), user.first().userpassword.encode('UTF-8'))
-				print(user.first().userpassword.encode('UTF-8'), password)												
+				password = bcrypt.hashpw(Request['password'].encode('UTF-8'), user.first().userpassword.encode('UTF-8'))														
 				if user.first().userpassword.encode('UTF-8') == password: # CHECK IF PASSWORD IS CORRECT
-					userType = get_user_type(user.first().id)			
-					print(userType)		
+					userType = get_user_type(user.first().id)								
 					already_login = UsersLogs.query.filter_by(username = user.first().username)
 					if already_login.count() == 1:
 						update_active_user(public_id, datetime_now, already_login)
 						token = jwt.encode({'username': user.first().username, 'public_id' : public_id, 'exp': datetime_now + timedelta(days = 1)}, app.config['SECRET_KEY'])
-						token = token.decode('UTF-8')
-						print(token,userType)
+						token = token.decode('UTF-8')						
 						return {'token': token, 'userType': userType}
 					elif already_login.count() == 0:
 						add_active_user(user.first().username, public_id, datetime_now)					
