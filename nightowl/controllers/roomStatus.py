@@ -57,10 +57,10 @@ class AllRoomStatus(Resource): # for mobile and other app
 
 			room_status = RoomStatus.query.all()
 			for queried_room_status in room_status:
-				status = True
-				if queried_room_status.status == "off":
-					status = False
-				data.append({"id": queried_room_status.id, "status": queried_room_status.status})
+				status = 'True'
+				if queried_room_status.status == "False":
+					status = 'False'
+				data.append({"id": queried_room_status.id, "status": status})
 			return data
 		else:
 			return 401
@@ -74,21 +74,10 @@ class RoomStatusByID(Resource): # for mobile and other app
 				return {"message": "room status not found"}
 			return {"id": room_status.id, "status": room_status.status}
 		else:
-			401
-
-	@token_required
-	def delete(current_user, self, room_status_id):
-		if current_user['userType'] == "Admin":
-			room_status = RoomStatus.query.filter_by(id = room_status_id)
-			if room_status.count() == 0:
-				return {"message": "room device not found"}
-			room_status.delete()
-			db.session.commit()
-		else:
-			return 401
+			401	
 
 
-class AddDeviceToRoom(Resource):
+class GetDeviceToAdd(Resource):
 	@token_required
 	def get(current_user, self, room_id): # get all device not is not added to the room
 		if current_user['userType'] == "Admin":
@@ -104,26 +93,6 @@ class AddDeviceToRoom(Resource):
 							"description": device.description
 						})
 			return data
-		else:
-			return 401
-
-	@token_required
-	def post(current_user, self, room_id):
-		if current_user['userType'] == "Admin":
-			room = Room.query.filter_by(id = room_id).first()
-			data = request.get_json()
-
-			if room == None:
-					return {"message": "room not found"}
-			for device_id in data:
-				device = Devices.query.filter_by(id = device_id).first()
-				if device == None:
-					return {"message": "device not found"}
-				addDevice = RoomStatus(status = "off", timestamp = datetime.today())
-				addDevice.device = device
-				addDevice.room = room
-				db.session.add(addDevice)
-				db.session.commit()
 		else:
 			return 401
 

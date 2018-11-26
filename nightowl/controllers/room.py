@@ -57,7 +57,7 @@ class room(Resource):
 	def delete(current_user, self, id):
 		if current_user['userType'] == "Admin":
 			if RoomStatus.query.filter_by(room_id = id).count() != 0:
-				RoomStatus.query.filter_by(room_id = id).delete()		
+				return {"message": "please remove devices before you delete room"}	
 			if GroupAccess.query.filter_by(group_id = id).count() !=0:
 				GroupAccess.query.filter_by(group_id = id).delete()			
 			Room.query.filter_by(id = id).delete()

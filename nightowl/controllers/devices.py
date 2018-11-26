@@ -48,7 +48,7 @@ class device(Resource):
 	def delete(current_user, self, id):
 		if current_user['userType'] == "Admin":
 			if RoomStatus.query.filter_by(device_id = id).count() != 0:
-				RoomStatus.query.filter_by(device_id = id).delete()			
+				return {"message": "please remove devices from room before you delete device"}
 			Devices.query.filter_by(id = id).delete()
 			db.session.commit()
 			return {"response":'device successfully deleted'}

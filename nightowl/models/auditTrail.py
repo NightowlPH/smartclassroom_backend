@@ -1,6 +1,8 @@
 from nightowl.app import db
 from sqlalchemy import ForeignKey
 from nightowl.models.users import Users
+from nightowl.models.room import Room
+from nightowl.models.permission import Permission
 
 class AuditTrail(db.Model):
 	__tablename__ = "audit_trail"

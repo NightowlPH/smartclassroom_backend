@@ -4,10 +4,10 @@ from ..auth.authentication import token_required
 from flask_restful import Resource
 from datetime import datetime
 
-from nightowl.models.auditTrail import AuditTrail
 from nightowl.models.users import Users
 from nightowl.models.room import Room
 from nightowl.models.permission import Permission
+from nightowl.models.auditTrail import AuditTrail
 
 class auditTrail(Resource):
 	@token_required
