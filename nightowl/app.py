@@ -17,7 +17,7 @@ from nightowl.controllers.auditTrail import auditTrail,deleteAuditTrail, delAllA
 from nightowl.controllers.remoteDesign import AllRemoteDesign
 from nightowl.controllers.devices import devices, device
 from nightowl.controllers.login import login,logout
-from nightowl.controllers.roomStatus import roomStatus, RoomStatusByID, GetDeviceToAdd 
+from nightowl.controllers.roomStatus import roomStatus, RoomStatusByID, GetDeviceToAdd, AllRoomStatusByID, AddDeviceToRoom
 from nightowl.controllers.users import user, users, getUserProfile, editProfile, changePassword
 from nightowl.controllers.permission import permission, permissions, getAllPer
 from nightowl.controllers.group import groups, group, groupDetails
@@ -79,6 +79,9 @@ api.add_resource(RoomStatusByID, '/roomStatus/<int:room_status_id>')
 api.add_resource(GetDeviceToAdd, '/getDeviceToAdd/<int:room_id>')
 
 api.add_resource(AllRemoteDesign, '/remoteDesign')
+
+api.add_resource(AllRoomStatusByID, '/roomStatusByID/<int:room_status_id>')
+api.add_resource(AddDeviceToRoom, '/addRoomDevice/<int:room_id>')  
 
 
 db.create_all()

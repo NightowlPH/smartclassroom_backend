@@ -4,6 +4,7 @@ from nightowl.app import db
 from ..auth.authentication import token_required
 from flask_restful import Resource
 from datetime import datetime
+from mqtt import mqtt
 
 from nightowl.models.roomStatus import RoomStatus
 from nightowl.models.room import Room
@@ -95,5 +96,55 @@ class GetDeviceToAdd(Resource):
 			return data
 		else:
 			return 401
+
+class AddDeviceToRoom(Resource):	
+	def post(self, room_id):		
+		room = Room.query.filter_by(id = room_id).first()
+		data = request.get_json()
+
+		if room == None:
+				return {"message": "room not found"}
+		for device_id in data:
+			device = Devices.query.filter_by(id = device_id).first()
+			remoteDesign = RemoteDesign.query.filter_by(id = device.remote_design_id).first()
+			if device == None:
+				return {"message": "device not found"}
+			addDevice = RoomStatus(status = 'False', timestamp = datetime.today())
+			addDevice.device = device
+			addDevice.room = room
+			mqtt.subscribe("smartclassroom/"+str(room.name)+"/"+str(device.name)+"/"+str(remoteDesign.ext_topic))			
+			db.session.add(addDevice)
+			db.session.commit()
+			print("ADD-->")			
+
+class AllRoomStatusByID(Resource):
+	def put(self, room_status_id):
+		room_status = RoomStatus.query.filter_by(id = room_status_id).first()
+		if room_status == None:
+			return {"message": "room status not found"}
+
+		payload = request.get_json()['value']
+		data = get_room_status_details(room_status)		
+
+		mqtt.publish("smartclassroom/"+str(data['room_name'])+"/"+str(data['device_name'])+"/"+str(data['ext_topic']),payload)		
+
+	def delete(self, room_status_id):		
+		room_status = RoomStatus.query.filter_by(id = room_status_id)
+		if room_status.count() == 0:
+			return {"message": "room device not found"}
+
+		data = get_room_status_details(room_status.first())		
+		mqtt.unsubscribe("smartclassroom/"+str(data['room_name'])+"/"+str(data['device_name'])+"/"+str(data['ext_topic']))		
+		room_status.delete()
+		db.session.commit()
+		print("delete-->")		
+
+def get_room_status_details(room_status):
+
+	room = Room.query.filter_by(id = room_status.room_id).first()
+	device = Devices.query.filter_by(id = room_status.device_id).first()
+	remoteDesign = RemoteDesign.query.filter_by(id = device.remote_design_id).first()
+
+	return {"room_name": room.name, "device_name": device.name, "ext_topic": remoteDesign.ext_topic}
 
 
