@@ -124,6 +124,12 @@ class AllRoomStatusByID(Resource):
 			return {"message": "room status not found"}
 
 		payload = request.get_json()['value']
+		if payload == True:
+			payload = "true"
+		elif payload == False:
+			payload = "false"
+		else:
+			return {"message": "invelid payload"}
 		data = get_room_status_details(room_status)		
 
 		mqtt.publish("smartclassroom/"+str(data['room_name'])+"/"+str(data['device_name'])+"/"+str(data['ext_topic']),payload)		
