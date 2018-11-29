@@ -5,6 +5,7 @@ from ..auth.authentication import token_required
 from flask_restful import Resource
 from datetime import datetime
 from mqtt import mqtt
+import json
 
 from nightowl.models.roomStatus import RoomStatus
 from nightowl.models.room import Room
@@ -33,8 +34,8 @@ class roomStatus(Resource): # for angular frontend app
 					remote_design = RemoteDesign.query.filter_by(id = device.remote_design_id).first()
 					class_name = ""
 					if remote_design.name == "Switch2":
-						class_name = "Door"					
-					data['devices'].append({
+						class_name = "Door"
+					device_details = {
 							"device_id": queried_room_device.device_id,
 							"device_name": device.name,
 							"device_status": queried_room_device.status,
@@ -42,7 +43,11 @@ class roomStatus(Resource): # for angular frontend app
 							"remote_design": remote_design.name,
 							"remote_design_id": remote_design.id,
 							"class_name": class_name
-						})
+						}
+					if remote_design.name == "Temperature Slider":
+						tem_details = json.loads(remote_design.data)
+						device_details.update(tem_details)
+					data['devices'].append(device_details)
 				all_data["room_status"].append(data)
 			return all_data
 		else:
@@ -118,16 +123,19 @@ class AddDeviceToRoom(Resource):
 			print("ADD-->")			
 
 class AllRoomStatusByID(Resource):
-	def put(self, room_status_id):
+	def put(self, room_status_id): #CONTROL DEVICE
 		room_status = RoomStatus.query.filter_by(id = room_status_id).first()
 		if room_status == None:
 			return {"message": "room status not found"}
 
 		payload = request.get_json()['value']
+		print(type(payload),payload)
 		if payload == True:
 			payload = "true"
 		elif payload == False:
 			payload = "false"
+		elif type(payload) == int and int(payload) >=16 and int(payload) <= 26:
+			payload = int(payload)
 		else:
 			return {"message": "invelid payload"}
 		data = get_room_status_details(room_status)		
