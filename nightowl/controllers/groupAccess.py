@@ -47,7 +47,7 @@ class groupAccess(Resource):
 class shwNotGrpAccess(Resource):
 	@token_required
 	def get(current_user, self, id):
-		if current_user == "Admin":
+		if current_user['userType'] == "Admin":
 			counter = 0
 			allGroup = []
 			groups_schema = GroupSchema(only=('id','name'))
