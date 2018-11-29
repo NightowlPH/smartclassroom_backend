@@ -114,7 +114,11 @@ class AddDeviceToRoom(Resource):
 			remoteDesign = RemoteDesign.query.filter_by(id = device.remote_design_id).first()
 			if device == None:
 				return {"message": "device not found"}
-			addDevice = RoomStatus(status = 'False', timestamp = datetime.today())
+			if remoteDesign.name == "Temperature Slider":				
+				status = 24
+			else:
+				status = 'false'
+			addDevice = RoomStatus(status = status, timestamp = datetime.today())
 			addDevice.device = device
 			addDevice.room = room
 			mqtt.subscribe("smartclassroom/"+str(room.name)+"/"+str(device.name)+"/"+str(remoteDesign.ext_topic))			
