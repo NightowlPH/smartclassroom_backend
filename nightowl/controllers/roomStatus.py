@@ -11,12 +11,13 @@ from nightowl.models.roomStatus import RoomStatus
 from nightowl.models.room import Room
 from nightowl.models.devices import Devices
 from nightowl.models.remoteDesign import RemoteDesign
+from nightowl.models.usersLogs import UsersLogs
 
 
 class roomStatus(Resource): # for angular frontend app
 	@token_required
 	def get(current_user, self):
-		if current_user['userType'] == "Admin":
+		if current_user['userType'] == "Admin" or current_user['userType'] == "User":
 			all_data = {"room_status": []}
 
 			rooms = Room.query.all()
@@ -102,60 +103,93 @@ class GetDeviceToAdd(Resource):
 		else:
 			return 401
 
-class AddDeviceToRoom(Resource):	
-	def post(self, room_id):		
-		room = Room.query.filter_by(id = room_id).first()
-		data = request.get_json()
+class AddDeviceToRoom(Resource):
+	@token_required	
+	def post(current_user, self, room_id):
+		if current_user['userType'] == "Admin":		
+			room = Room.query.filter_by(id = room_id).first()
+			data = request.get_json()
 
-		if room == None:
-				return {"message": "room not found"}
-		for device_id in data:
-			device = Devices.query.filter_by(id = device_id).first()
-			remoteDesign = RemoteDesign.query.filter_by(id = device.remote_design_id).first()
-			if device == None:
-				return {"message": "device not found"}
-			if remoteDesign.name == "Temperature Slider":				
-				status = 24
-			else:
-				status = 'false'
-			addDevice = RoomStatus(status = status, timestamp = datetime.today())
-			addDevice.device = device
-			addDevice.room = room
-			mqtt.subscribe("smartclassroom/"+str(room.name)+"/"+str(device.name)+"/"+str(remoteDesign.ext_topic))			
-			db.session.add(addDevice)
-			db.session.commit()
-			print("ADD-->")			
+			if room == None:
+					return {"message": "room not found"}
+			for device_id in data:
+				device = Devices.query.filter_by(id = device_id).first()
+				remoteDesign = RemoteDesign.query.filter_by(id = device.remote_design_id).first()
+				if device == None:
+					return {"message": "device not found"}
+				if remoteDesign.name == "Temperature Slider":				
+					status = 24
+				else:
+					status = 'false'
+				addDevice = RoomStatus(status = status, timestamp = datetime.today())
+				addDevice.device = device
+				addDevice.room = room
+				mqtt.subscribe("smartclassroom/"+str(room.name)+"/"+str(device.name)+"/"+str(remoteDesign.ext_topic))			
+				db.session.add(addDevice)
+				db.session.commit()
+				print("ADD-->")
+		else:
+			return 401
 
 class AllRoomStatusByID(Resource):
-	def put(self, room_status_id): #CONTROL DEVICE
-		room_status = RoomStatus.query.filter_by(id = room_status_id).first()
-		if room_status == None:
-			return {"message": "room status not found"}
+	@token_required	
+	def put(current_user, self, room_status_id): #CONTROL DEVICE
+		if current_user['userType'] == "Admin" or current_user['userType'] == "User":
+			room_status = RoomStatus.query.filter_by(id = room_status_id).first()
+			if room_status == None:
+				return {"message": "room status not found"}
 
-		payload = request.get_json()['value']
-		print(type(payload),payload)
-		if payload == True:
-			payload = "true"
-		elif payload == False:
-			payload = "false"
-		elif type(payload) == int and int(payload) >=16 and int(payload) <= 26:
-			payload = int(payload)
+			payload = request.get_json()['value']
+			print(type(payload),payload)
+			if payload == True:
+				payload = "true"
+			elif payload == False:
+				payload = "false"
+			elif type(payload) == int and int(payload) >=16 and int(payload) <= 26:
+				payload = int(payload)
+			else:
+				return {"message": "invelid payload"}
+			data = get_room_status_details(room_status)		
+
+			mqtt.publish("smartclassroom/"+str(data['room_name'])+"/"+str(data['device_name'])+"/"+str(data['ext_topic']),payload)
+			users = UsersLogs.query.filter(UsersLogs.status == "active", UsersLogs.username != current_user['username']).all()
+			for user in users:
+				user.room_control_real_time_data = False
+			db.session.commit()
 		else:
-			return {"message": "invelid payload"}
-		data = get_room_status_details(room_status)		
+			return 401		
 
-		mqtt.publish("smartclassroom/"+str(data['room_name'])+"/"+str(data['device_name'])+"/"+str(data['ext_topic']),payload)		
+	@token_required	
+	def delete(current_user, self, room_status_id):
+		if current_user['userType'] == "Admin":		
+			room_status = RoomStatus.query.filter_by(id = room_status_id)
+			if room_status.count() == 0:
+				return {"message": "room device not found"}
 
-	def delete(self, room_status_id):		
-		room_status = RoomStatus.query.filter_by(id = room_status_id)
-		if room_status.count() == 0:
-			return {"message": "room device not found"}
+			data = get_room_status_details(room_status.first())		
+			mqtt.unsubscribe("smartclassroom/"+str(data['room_name'])+"/"+str(data['device_name'])+"/"+str(data['ext_topic']))		
+			room_status.delete()
+			db.session.commit()
+			print("delete-->")
+		else:
+			return 401	
 
-		data = get_room_status_details(room_status.first())		
-		mqtt.unsubscribe("smartclassroom/"+str(data['room_name'])+"/"+str(data['device_name'])+"/"+str(data['ext_topic']))		
-		room_status.delete()
-		db.session.commit()
-		print("delete-->")		
+class Room_control_real_time_data(Resource):  # CHECK IF USER HAS REAL TIME IN ROOM CONTROL
+	@token_required
+	def get(current_user, self):
+		if current_user['userType'] == "Admin" or current_user['userType'] == "User":
+			user = UsersLogs.query.filter_by(username = current_user['username'])
+			if user.count() == 0 or user.count() > 1:
+				return {"message": "user is not currently login"}
+			if user.first().room_control_real_time_data:
+				return {"room_control_updated": True}
+			if not user.first().room_control_real_time_data:
+				user.one().room_control_real_time_data = True
+				db.session.commit()
+				return {"room_control_updated": False}
+		else:
+			return 401
+
 
 def get_room_status_details(room_status):
 

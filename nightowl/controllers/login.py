@@ -95,7 +95,7 @@ class logout(Resource):
 
 
 def add_active_user(username, public_id, time_login):
-	add = UsersLogs(username = username, public_id = public_id, time_login = time_login , last_request_time = time_login, status = "active")
+	add = UsersLogs(username = username, public_id = public_id, time_login = time_login , last_request_time = time_login, status = "active", room_control_real_time_data = True)
 	db.session.add(add)
 	db.session.commit()	
 

@@ -1,9 +1,10 @@
-from flask import request
+from flask import request, send_file
 from nightowl.app import db
 from flask_restful import Resource
 import uuid
 import bcrypt
 import jwt
+import os
 
 from ..auth.authentication import token_required
 
@@ -11,6 +12,7 @@ from nightowl.models.users import Users
 from nightowl.models.groupMember import GroupMember
 from nightowl.models.usersLogs import UsersLogs
 from nightowl.models.group import Group
+from nightowl.models.permission import Permission
 
 from nightowl.app import app
 
@@ -39,7 +41,7 @@ class users(Resource):
 				return {"message": "password must be more than 10 characters"} 					
 			if Users.query.filter_by(username = Request['username']).count() == 0: #CHECK IF USER ALREADY EXIST
 				addUser = Users(username = Request['username'], userpassword = bcrypt.hashpw(Request['userpassword'].encode('UTF-8'), bcrypt.gensalt()),
-				                Lname = Request['Lname'], Fname = Request['Fname'], cardID = Request['cardID'])
+				                Lname = Request['Lname'], Fname = Request['Fname'], cardID = Request['cardID'], has_profile_picture = False)
 				db.session.add(addUser)
 				db.session.commit()			
 				return {"message": "success"}, 200
@@ -47,6 +49,38 @@ class users(Resource):
 				return {'message': 'already exist'}
 		else:
 			return 401
+
+class Get_account_photo(Resource):
+	def put(self): #send user profile picture
+
+		token = None
+		if 'x-access-token' in request.headers:            
+			token = request.headers['x-access-token']            
+
+		if not token:            
+			return jsonify({'message' : 'token is missing'})		
+
+		try:            
+			data = jwt.decode(token, app.config['SECRET_KEY'])					
+			active_user = UsersLogs.query.filter_by(public_id = data['public_id'], username = data['username']).first()					
+			user = Users.query.filter_by(username = active_user.username).first()		
+			userType = get_user_type(user.id)
+			if userType == "Admin" or userType == "User":
+
+				if user == None:
+					return {"message": "user not found"}
+				if not user.has_profile_picture:
+					return {"message": "user has no profile picture"}			
+				return send_file('image/user/'+str(user.id)+'.jpg', mimetype='image/jpg')
+			else:
+				return 401
+		except Exception as error: 			
+			error = str(error)        
+			print("user photo",error)
+			if error == "Signature has expired":				      
+				return {"message": "your token has been expired"}, 500  
+			else:
+				return 500 
 
 
 class editProfile(Resource):
@@ -104,10 +138,9 @@ class user(Resource):
 
 	@token_required
 	def put(current_user, self, id):
-		if current_user['userType'] == "Admin" or current_user['userType'] == "User":		
-			data = request.get_json()							
-			query = Users.query.filter_by(username = data['username'])
-			query2 = Users.query.filter_by(cardID = data['cardID'])
+		if current_user['userType'] == "Admin" or current_user['userType'] == "User":													
+			query = Users.query.filter_by(username = request.values['username'])			
+			query2 = Users.query.filter_by(cardID = request.values['cardID'])
 
 			if query.count() > 0 and query.first().id != int(id):
 				return { "message": "username already exist"}
@@ -115,12 +148,26 @@ class user(Resource):
 			elif query2.count() > 0 and query2.first().id != int(id):				
 				return { "message": "cardID already exist"}
 
-			else:
-				query = Users.query.filter_by(id = id).one()
-				query.username = data['username']
-				query.Lname = data['Fname']
-				query.Lname = data['Lname']
-				query.cardID = data['cardID']
+			else:	
+
+				try:			
+					file = request.files['Image']
+					if query.first().has_profile_picture:					
+						os.remove("nightowl/image/user/"+str(id)+".jpg") 				
+					image_file_name = str(id)+"."+'jpg'
+					file.save(os.path.join('nightowl/image/user', image_file_name))
+					photo = True					
+				except Exception as e:
+					photo = False
+					print(e,"error")					
+								
+				user = Users.query.filter_by(id = id).one()
+				user.username = request.values['username']
+				user.Fname = request.values['Fname']
+				user.Lname = request.values['Lname']
+				user.cardID = request.values['cardID']
+				if photo:					
+					user.has_profile_picture = True
 				db.session.commit()				
 		else:
 			return 401
@@ -151,8 +198,7 @@ class getUserProfile(Resource):	# THIS IS IN SIDEBAR HEADER
 				return 401          
 			return data
 		except Exception as error: 			
-			error = str(error)        
-			print("==>",error)
+			error = str(error)        			
 			if error == "Signature has expired":				        
 				return {"message": "your token has been expired"}, 500  
 			else:
@@ -179,6 +225,31 @@ class changePassword(Resource):
 			return {'message': 'your password is successfully change'}
 		else:
 			return 401
+
+
+def get_user_type(user_id):
+    group_permission = []
+    member = GroupMember.query.filter_by(user_id = user_id).all()
+    if member == None:
+        return "Guest"
+    for queried_data in member:
+        group = Group.query.filter_by(id = queried_data.group_id).first()
+        permission = Permission.query.filter_by(id = group.permission_id).first()
+        group_permission.append(permission.name)
+    try:
+        group_permission.index('Admin')
+        return "Admin"        
+    except Exception as error:
+        error = str(error)
+        print(error)
+    try:       
+        group_permission.index('User')
+        return "User"
+    except Exception as error:
+        error = str(error)
+        print(error)
+
+    return "Guest"
 
 
 		
