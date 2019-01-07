@@ -19,7 +19,8 @@ def loadTestData():
 	# CREATE TEST USERS
 	with open('./instance/resources/test_user.csv', 'rt') as csvfile:
 		users = csv.reader(csvfile, delimiter=',')
-		for user in users: 			
+		for user in users:
+			print(user) 			
 			# password = bcrypt.hashpw(user[1].encode('UTF-8'), bcrypt.gensalt())			
 			add = Users(username = user[0], userpassword = user[1], Fname = user[2], Lname = user[3], cardID = user[4], has_profile_picture = False)
 			db.session.add(add)	

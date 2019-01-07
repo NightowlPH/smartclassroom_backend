@@ -116,8 +116,9 @@ def get_user_type(user_id):
 	for queried_data in member:
 		group = Group.query.filter_by(id = queried_data.group_id).first()
 		permission = Permission.query.filter_by(id = group.permission_id).first()
+		print(permission.name)
 		group_permission.append(permission.name)
-	print(group_permission)
+	print(group_permission,"==>")
 	try:
 		group_permission.index('Admin')
 		return "Admin"		
