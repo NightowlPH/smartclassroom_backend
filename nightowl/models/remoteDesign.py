@@ -7,7 +7,7 @@ class RemoteDesign(db.Model):
   name = db.Column(db.String(100))
   ext_topic = db.Column(db.String(100)) 
   description = db.Column(db.String(100))
-  data = db.Column(db.JSON()) 
+  data = db.Column(db.JSON) 
 
   def __init__(self,name,description, data, ext_topic):
     self.name = name
