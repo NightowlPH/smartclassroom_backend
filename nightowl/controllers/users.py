@@ -150,16 +150,16 @@ class user(Resource):
 
 			else:	
 
-				try:			
-					file = request.files['Image']
-					if query.first().has_profile_picture:					
-						os.remove("nightowl/image/user/"+str(id)+".jpg") 				
-					image_file_name = str(id)+"."+'jpg'
-					file.save(os.path.join('nightowl/image/user', image_file_name))
-					photo = True					
-				except Exception as e:
-					photo = False
-					print(e,"error")					
+				# try:			
+				file = request.files['Image']
+				if query.first().has_profile_picture:					
+					os.remove("nightowl/image/user/"+str(id)+".jpg") 				
+				image_file_name = str(id)+"."+'jpg'
+				file.save(os.path.join('nightowl/image/user', image_file_name))
+				photo = True					
+				# except Exception as e:
+				# 	photo = False
+				# 	print(e,"error")					
 								
 				user = Users.query.filter_by(id = id).one()
 				user.username = request.values['username']
