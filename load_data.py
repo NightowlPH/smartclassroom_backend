@@ -16,16 +16,6 @@ from nightowl.models.remoteDesign import RemoteDesign
 
 def loadData(dirname='data'):
 
-    # CREATE TEST USERS
-    with open('./{}/user.csv'.format(dirname), 'rt') as csvfile:
-        users = csv.reader(csvfile, delimiter=';')
-        for user in users:
-            print(user)
-            # password = bcrypt.hashpw(user[1].encode('UTF-8'), bcrypt.gensalt())
-            add = Users(username = user[0], userpassword = user[1], Fname = user[2], Lname = user[3], cardID = user[4], has_profile_picture = False)
-            db.session.add(add)
-            db.session.commit()
-
     # CREATE TEST PERMISSIONS
     with open('./{}/permission.csv'.format(dirname), 'rt') as csvfile:
         permissions = csv.reader(csvfile, delimiter=';')
@@ -35,6 +25,29 @@ def loadData(dirname='data'):
             add = Permission(name = permission[0], description = permission[1])
             db.session.add(add)
             db.session.commit()
+
+    # CREATE TEST ROOMS
+    with open('./{}/room.csv'.format(dirname), 'rt') as csvfile:
+        rooms = csv.reader(csvfile, delimiter=';')
+        print("-----------------------------------------------------------")
+        for room in rooms:
+            print(room)
+            add = Room(name = room[0], description = room[1])
+            db.session.add(add)
+        db.session.commit()
+    
+    with open('./{}/group_access.csv'.format(dirname), 'rt') as csvfile:
+        access = csv.reader(csvfile, delimiter=';')
+        print("-----------------------------------------------------------")
+        for ga in access:
+            print(ga)
+            group = Group.query.filter_by(name=ga[0]).first()
+            room = Room.query.filter_by(name=ga[1]).first()
+            permission = Permission.query.filter_by(name=ga[2]).first()
+            add = GroupAccess(group=group, room=room, permission=permission)
+            db.session.add(add)
+        db.session.commit()
+
 
     # CREATE TEST GROUP
     with open('./{}/group.csv'.format(dirname), 'rt') as csvfile:
@@ -47,15 +60,18 @@ def loadData(dirname='data'):
             db.session.add(add)
             db.session.commit()
 
-
-    # CREATE TEST ROOMS
-    with open('./{}/room.csv'.format(dirname), 'rt') as csvfile:
-        rooms = csv.reader(csvfile, delimiter=';')
-        print("-----------------------------------------------------------")
-        for room in rooms:
-            print(room)
-            add = Room(name = room[0], description = room[1])
+    # CREATE TEST USERS
+    with open('./{}/user.csv'.format(dirname), 'rt') as csvfile:
+        users = csv.reader(csvfile, delimiter=';')
+        for user in users:
+            print(user)
+            # password = bcrypt.hashpw(user[1].encode('UTF-8'), bcrypt.gensalt())
+            add = Users(username = user[0], userpassword = user[1], Fname = user[2], Lname = user[3], cardID = user[4], has_profile_picture = False)
             db.session.add(add)
+            for group_name in user[5].split(','):
+                group = Group.query.filter_by(name = group_name).first()
+                gm = GroupMember(group=group, user=add)
+                db.session.add(gm)
             db.session.commit()
 
     # CREATE TEST REMOTE DESIGN

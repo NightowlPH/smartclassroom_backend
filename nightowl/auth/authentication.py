@@ -59,10 +59,10 @@ def get_user_type(user_id):
         group_permission.append(permission.name)
     try:
         group_permission.index('Admin')
-        return "Admin"        
+        return "Admin"
     except Exception as error:
-        error = str(error)        
-    try:       
+        error = str(error)
+    try:
         group_permission.index('User')
         return "User"
     except Exception as error:
