@@ -1,3 +1,4 @@
+import sys
 import csv
 import bcrypt
 from nightowl.app import db
