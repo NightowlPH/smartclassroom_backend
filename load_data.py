@@ -35,19 +35,6 @@ def loadData(dirname='data'):
             add = Room(name = room[0], description = room[1])
             db.session.add(add)
         db.session.commit()
-    
-    with open('./{}/group_access.csv'.format(dirname), 'rt') as csvfile:
-        access = csv.reader(csvfile, delimiter=';')
-        print("-----------------------------------------------------------")
-        for ga in access:
-            print(ga)
-            group = Group.query.filter_by(name=ga[0]).first()
-            room = Room.query.filter_by(name=ga[1]).first()
-            permission = Permission.query.filter_by(name=ga[2]).first()
-            add = GroupAccess(group=group, room=room, permission=permission)
-            db.session.add(add)
-        db.session.commit()
-
 
     # CREATE TEST GROUP
     with open('./{}/group.csv'.format(dirname), 'rt') as csvfile:
@@ -59,6 +46,19 @@ def loadData(dirname='data'):
             add.permission = Permission.query.filter_by(id = group[2]).first()
             db.session.add(add)
             db.session.commit()
+
+    # CREATE GROUP ACCESS
+    with open('./{}/group_access.csv'.format(dirname), 'rt') as csvfile:
+        access = csv.reader(csvfile, delimiter=';')
+        print("-----------------------------------------------------------")
+        for ga in access:
+            print(ga)
+            group = Group.query.filter_by(name=ga[0]).first()
+            room = Room.query.filter_by(name=ga[1]).first()
+            permission = Permission.query.filter_by(name=ga[2]).first()
+            add = GroupAccess(group=group, room=room, permission=permission)
+            db.session.add(add)
+        db.session.commit()
 
     # CREATE TEST USERS
     with open('./{}/user.csv'.format(dirname), 'rt') as csvfile:
