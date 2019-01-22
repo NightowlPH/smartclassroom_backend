@@ -18,7 +18,7 @@ def loadData(dirname='data'):
 
     # CREATE TEST USERS
     with open('./{}/user.csv'.format(dirname), 'rt') as csvfile:
-        users = csv.reader(csvfile, delimiter=',')
+        users = csv.reader(csvfile, delimiter=';')
         for user in users:
             print(user)
             # password = bcrypt.hashpw(user[1].encode('UTF-8'), bcrypt.gensalt())
@@ -28,7 +28,7 @@ def loadData(dirname='data'):
 
     # CREATE TEST PERMISSIONS
     with open('./{}/permission.csv'.format(dirname), 'rt') as csvfile:
-        permissions = csv.reader(csvfile, delimiter=',')
+        permissions = csv.reader(csvfile, delimiter=';')
         print("-----------------------------------------------------------")
         for permission in permissions:
             print(permission)
@@ -38,7 +38,7 @@ def loadData(dirname='data'):
 
     # CREATE TEST GROUP
     with open('./{}/group.csv'.format(dirname), 'rt') as csvfile:
-        groups = csv.reader(csvfile, delimiter=',')
+        groups = csv.reader(csvfile, delimiter=';')
         print("-----------------------------------------------------------")
         for group in groups:
             print(group)
@@ -57,7 +57,7 @@ def loadData(dirname='data'):
 
     # CREATE TEST ROOMS
     with open('./{}/room.csv'.format(dirname), 'rt') as csvfile:
-        rooms = csv.reader(csvfile, delimiter=',')
+        rooms = csv.reader(csvfile, delimiter=';')
         print("-----------------------------------------------------------")
         for room in rooms:
             print(room)
@@ -77,7 +77,7 @@ def loadData(dirname='data'):
 
     # CREATE TEST DEVICE
     with open('./{}/device.csv'.format(dirname), 'rt') as csvfile:
-        devices = csv.reader(csvfile, delimiter=',')
+        devices = csv.reader(csvfile, delimiter=';')
         print("-----------------------------------------------------------")
         for device in devices:
             print(device)
