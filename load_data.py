@@ -48,13 +48,6 @@ def loadData(dirname='data'):
             db.session.commit()
 
 
-    # CREATE TEST GROUP MEMBER
-    add_group_member = GroupMember()
-    add_group_member.group = Group.query.first()
-    add_group_member.user = Users.query.filter_by(username = "mike").first()
-    db.session.add(add_group_member)
-    db.session.commit()
-
     # CREATE TEST ROOMS
     with open('./{}/room.csv'.format(dirname), 'rt') as csvfile:
         rooms = csv.reader(csvfile, delimiter=';')
