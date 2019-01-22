@@ -60,7 +60,7 @@ def loadData(dirname='data'):
 
     # CREATE TEST REMOTE DESIGN
     with open('./{}/remote_design.csv'.format(dirname), 'rt') as csvfile:
-        remote_designs = csv.reader(csvfile, delimiter='>')
+        remote_designs = csv.reader(csvfile, delimiter=';')
         print("-----------------------------------------------------------")
         for remote_design in remote_designs:
             print(remote_design)
