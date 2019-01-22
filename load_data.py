@@ -17,7 +17,7 @@ from nightowl.models.remoteDesign import RemoteDesign
 def loadData(dirname='data'):
 
     # CREATE TEST USERS
-    with open('./{}/resources/user.csv'.format(dirname), 'rt') as csvfile:
+    with open('./{}/user.csv'.format(dirname), 'rt') as csvfile:
         users = csv.reader(csvfile, delimiter=',')
         for user in users:
             print(user)
@@ -27,7 +27,7 @@ def loadData(dirname='data'):
             db.session.commit()
 
     # CREATE TEST PERMISSIONS
-    with open('./{}/resources/permission.csv'.format(dirname), 'rt') as csvfile:
+    with open('./{}/permission.csv'.format(dirname), 'rt') as csvfile:
         permissions = csv.reader(csvfile, delimiter=',')
         print("-----------------------------------------------------------")
         for permission in permissions:
@@ -37,7 +37,7 @@ def loadData(dirname='data'):
             db.session.commit()
 
     # CREATE TEST GROUP
-    with open('./{}/resources/group.csv'.format(dirname), 'rt') as csvfile:
+    with open('./{}/group.csv'.format(dirname), 'rt') as csvfile:
         groups = csv.reader(csvfile, delimiter=',')
         print("-----------------------------------------------------------")
         for group in groups:
@@ -56,7 +56,7 @@ def loadData(dirname='data'):
     db.session.commit()
 
     # CREATE TEST ROOMS
-    with open('./{}/resources/room.csv'.format(dirname), 'rt') as csvfile:
+    with open('./{}/room.csv'.format(dirname), 'rt') as csvfile:
         rooms = csv.reader(csvfile, delimiter=',')
         print("-----------------------------------------------------------")
         for room in rooms:
@@ -66,7 +66,7 @@ def loadData(dirname='data'):
             db.session.commit()
 
     # CREATE TEST REMOTE DESIGN
-    with open('./{}/resources/remote_design.csv'.format(dirname), 'rt') as csvfile:
+    with open('./{}/remote_design.csv'.format(dirname), 'rt') as csvfile:
         remote_designs = csv.reader(csvfile, delimiter='>')
         print("-----------------------------------------------------------")
         for remote_design in remote_designs:
@@ -76,7 +76,7 @@ def loadData(dirname='data'):
             db.session.commit()
 
     # CREATE TEST DEVICE
-    with open('./{}/resources/device.csv'.format(dirname), 'rt') as csvfile:
+    with open('./{}/device.csv'.format(dirname), 'rt') as csvfile:
         devices = csv.reader(csvfile, delimiter=',')
         print("-----------------------------------------------------------")
         for device in devices:
