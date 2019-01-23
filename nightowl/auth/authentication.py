@@ -23,26 +23,26 @@ def token_required(f):
         if not token:            
             return jsonify({'message' : 'token is missing'})                
 
-        try:            
-            data = jwt.decode(token, app.config['SECRET_KEY'])                       
-            user_log = UsersLogs.query.filter_by(public_id = data['public_id'],username = data['username'])        
-            user = Users.query.filter_by(username =data['username'])            
-            if user.count() == 0 and user_log.count() == 0: # CHECK IF USER EXIST
-                return 401
-            elif user.count() == 1 and user_log.count() == 1:            
-                userType = get_user_type(user.first().id)                                                        
-                user_log.one().last_request_time = datetime.strptime(datetime.strftime(datetime.today(),'%Y-%m-%d %I:%M %p'),'%Y-%m-%d %I:%M %p')
-                db.session.commit()
-                return f({"userType": userType,'username': user.first().username}, *args, **kwargs) 
-            else:
-                return 401                                       
-        except Exception as error:   
-            error = str(error)        
-            print("==>>",error)
-            if error == "Signature has expired":                
-                return {"message": "your token has been expired"}, 500  
-            else:
-                return {"message": "Internal Server Error"}, 500         
+        # try:            
+        data = jwt.decode(token, app.config['SECRET_KEY'])                       
+        user_log = UsersLogs.query.filter_by(public_id = data['public_id'],username = data['username'])        
+        user = Users.query.filter_by(username =data['username'])            
+        if user.count() == 0 and user_log.count() == 0: # CHECK IF USER EXIST
+            return 401
+        elif user.count() == 1 and user_log.count() == 1:            
+            userType = get_user_type(user.first().id)                                                        
+            user_log.one().last_request_time = datetime.strptime(datetime.strftime(datetime.today(),'%Y-%m-%d %I:%M %p'),'%Y-%m-%d %I:%M %p')
+            db.session.commit()
+            return f({"userType": userType,'username': user.first().username}, *args, **kwargs) 
+        else:
+            return 401                                       
+        # except Exception as error:   
+        #     error = str(error)        
+        #     print("==>>",error)
+        #     if error == "Signature has expired":                
+        #         return {"message": "your token has been expired"}, 500  
+        #     else:
+        #         return {"message": "Internal Server Error"}, 500         
 
     return decorated
 

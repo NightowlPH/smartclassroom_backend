@@ -11,7 +11,7 @@ class UsersLogs(db.Model):
   time_login = db.Column(db.DateTime(timezone=True))
   last_request_time = db.Column(db.DateTime(timezone=True)) 
   status = db.Column(db.String(100))
-  room_control_real_time_data = db.Column(db.Boolean(), nullable = True)
+  room_control_real_time_data = db.Column(db.Boolean(), nullable = True) # if true means user is updated and false is not
   
 
   def __init__(self, public_id, time_login, last_request_time, status, username, room_control_real_time_data):    

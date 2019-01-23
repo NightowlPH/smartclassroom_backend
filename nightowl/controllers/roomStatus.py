@@ -59,15 +59,61 @@ class roomStatus(Resource): # for angular frontend app
 class AllRoomStatus(Resource): # for mobile and other app
 	@token_required
 	def get(current_user, self):
-		if current_user['userType'] == "Admin":
-			data = []
+		if current_user['userType'] == "Admin" or current_user['userType'] == "User":
+			all_data = {"room_status": []}
 
-			room_status = RoomStatus.query.all()
-			for queried_room_status in room_status:
-				status = 'True'
-				if queried_room_status.status == "False":
-					status = 'False'
-				data.append({"id": queried_room_status.id, "status": status})
+			rooms = Room.query.all()
+			totalDevice = Devices.query.count()	
+
+			for room in rooms:
+				data = {"room_id": room.id,"room_name": room.name.upper(), "devices": []}
+				query = Devices.query.filter_by(name = "Door").first()
+				room_device = RoomStatus.query.filter(RoomStatus.room_id == room.id, RoomStatus.device_id != query.id) # Ignore Door Device							
+				for queried_room_device in room_device.all():
+					device = Devices.query.filter_by(id = queried_room_device.device_id).first()					
+					device_name = device.name
+					device_status = queried_room_device.status					
+					if device.name == "Aircon temperature":				
+						device_name = "Temp."				
+					if queried_room_device.status == "true":
+						device_status = "on"
+					elif queried_room_device.status == "false":
+						device_status = "off"			
+					device_details = {													
+							"device_name": device_name,
+							"device_status": device_status,							
+						}					
+					data['devices'].append(device_details)
+				all_data["room_status"].append(data)
+			return all_data
+		else:
+			return 401
+
+class RoomStatusByRoomID(Resource):
+	@token_required
+	def get(current_user, self, id):
+		if current_user['userType'] == "Admin" or current_user['userType'] == "User":
+
+			room = Room.query.filter_by(id = id).first()
+			data = {"room_id": room.id,"room_name": room.name, "date": datetime.strftime(datetime.today(),'%B %d %Y %A') , "devices": []}
+
+			if room == None:
+				return {"message": "room not found"}
+			devices = RoomStatus.query.filter_by(room_id = room.id).all()
+			for device in devices:
+				queried_deivce = Devices.query.filter_by(id = device.device_id).first()				
+				device_details = {			
+						"room_status_id": device.id,				
+						"device_name": queried_deivce.name,
+						"device_status": device.status,							
+					}
+				if queried_deivce.name == "Aircon temperature":					
+					if len(data['devices']) != 0:
+						data['devices'].insert(0,device_details)
+					else:
+						data['devices'].append(device_details)
+				else:					
+					data['devices'].append(device_details)					
 			return data
 		else:
 			return 401
@@ -133,7 +179,7 @@ class AddDeviceToRoom(Resource):
 
 class AllRoomStatusByID(Resource):
 	@token_required	
-	def put(current_user, self, room_status_id): #CONTROL DEVICE
+	def put(current_user, self, room_status_id): #CONTROL DEVICES
 		if current_user['userType'] == "Admin" or current_user['userType'] == "User":
 			room_status = RoomStatus.query.filter_by(id = room_status_id).first()
 			if room_status == None:
@@ -148,7 +194,7 @@ class AllRoomStatusByID(Resource):
 			elif type(payload) == int and int(payload) >=16 and int(payload) <= 26:
 				payload = int(payload)
 			else:
-				return {"message": "invelid payload"}
+				return {"message": "invalid payload"}
 			data = get_room_status_details(room_status)		
 
 			mqtt.publish("smartclassroom/"+str(data['room_name'])+"/"+str(data['device_name'])+"/"+str(data['ext_topic']),payload)

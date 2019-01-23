@@ -74,6 +74,7 @@ class login(Resource):
 
 class logout(Resource):	
 	def post(self):
+		token = ''
 		if 'x-access-token' in request.headers:            
 			token = request.headers['x-access-token']                       
 
