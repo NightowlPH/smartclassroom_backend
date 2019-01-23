@@ -24,7 +24,7 @@ def loadData(dirname='data'):
             print(permission)
             add = Permission(name = permission[0], description = permission[1])
             db.session.add(add)
-            db.session.commit()
+        db.session.commit()
 
     # CREATE TEST ROOMS
     with open('./{}/room.csv'.format(dirname), 'rt') as csvfile:
@@ -45,7 +45,7 @@ def loadData(dirname='data'):
             add = Group(name = group[0], description = group[1])
             add.permission = Permission.query.filter_by(id = group[2]).first()
             db.session.add(add)
-            db.session.commit()
+        db.session.commit()
 
     # CREATE GROUP ACCESS
     with open('./{}/group_access.csv'.format(dirname), 'rt') as csvfile:
@@ -82,7 +82,7 @@ def loadData(dirname='data'):
             print(remote_design)
             add = RemoteDesign(name = remote_design[0], description = remote_design[1], data = remote_design[2], ext_topic = remote_design[3])
             db.session.add(add)
-            db.session.commit()
+        db.session.commit()
 
     # CREATE TEST DEVICE
     with open('./{}/device.csv'.format(dirname), 'rt') as csvfile:
@@ -93,7 +93,7 @@ def loadData(dirname='data'):
             add = Devices(name = device[0], description = device[1])
             add.remote_design = RemoteDesign.query.filter_by(id = int(device[2])).first()
             db.session.add(add)
-            db.session.commit()
+        db.session.commit()
 
 if __name__ == '__main__':
     if len(sys.argv)>1 and sys.argv[1] == 'test':
