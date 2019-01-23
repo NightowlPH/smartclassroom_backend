@@ -51,7 +51,7 @@ def token_required(f):
 def get_user_type(user_id):
     group_permission = []
     memberships = GroupMember.query.filter_by(user_id = user_id).all()
-    if member == None:
+    if memberships == None:
         return "Guest"
     for group_member in memberships:
         group_permission.append(group_member.group.permission.name)
