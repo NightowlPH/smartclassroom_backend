@@ -169,11 +169,13 @@ class AddDeviceToRoom(Resource):
 					status = 'false'
 				addDevice = RoomStatus(status = status, timestamp = datetime.today())
 				addDevice.device = device
-				addDevice.room = room
-				mqtt.subscribe("smartclassroom/"+str(room.name)+"/"+str(device.name)+"/"+str(remoteDesign.ext_topic))			
+				addDevice.room = room							
 				db.session.add(addDevice)
 				db.session.commit()
-				print("ADD-->")
+				room_status = RoomStatus.query.all()
+				# print(">>>>==================================",room_status,len(room_status))	
+			mqtt.publish("smartclassroom/reloadMqtt","true")
+				# print("ADD-->")
 		else:
 			return 401
 
@@ -196,12 +198,8 @@ class AllRoomStatusByID(Resource):
 			else:
 				return {"message": "invalid payload"}
 			data = get_room_status_details(room_status)		
-
-			mqtt.publish("smartclassroom/"+str(data['room_name'])+"/"+str(data['device_name'])+"/"+str(data['ext_topic']),payload)
-			users = UsersLogs.query.filter(UsersLogs.status == "active", UsersLogs.username != current_user['username']).all()
-			for user in users:
-				user.room_control_real_time_data = False
-			db.session.commit()
+			print("-----publish----")
+			mqtt.publish("smartclassroom/"+str(data['room_name'])+"/"+str(data['device_name'])+"/"+str(data['ext_topic']),payload)						
 		else:
 			return 401		
 
@@ -212,10 +210,10 @@ class AllRoomStatusByID(Resource):
 			if room_status.count() == 0:
 				return {"message": "room device not found"}
 
-			data = get_room_status_details(room_status.first())		
-			mqtt.unsubscribe("smartclassroom/"+str(data['room_name'])+"/"+str(data['device_name'])+"/"+str(data['ext_topic']))		
+			data = get_room_status_details(room_status.first())				
 			room_status.delete()
 			db.session.commit()
+			mqtt.publish("smartclassroom/reloadMqtt","true")
 			print("delete-->")
 		else:
 			return 401	
