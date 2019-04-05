@@ -1,6 +1,6 @@
 from flask import make_response, request, jsonify
 from functools import wraps
-from datetime import datetime
+from datetime import datetime, timedelta
 import jwt
 from nightowl.app import db
 import uuid
@@ -14,6 +14,7 @@ from ..models.group import Group
 from ..models.groupMember import GroupMember
 from ..models.permission import Permission
 from ..app import app
+import json
 
 def token_required(f):
     @wraps(f)
@@ -36,7 +37,18 @@ def token_required(f):
                 userType = get_user_type(user.first().id)
                 user_log.one().last_request_time = datetime.strptime(datetime.strftime(datetime.today(),'%Y-%m-%d %I:%M %p'),'%Y-%m-%d %I:%M %p')
                 db.session.commit()
-                return f({"userType": userType,'username': user.first().username}, *args, **kwargs)
+
+                token = jwt.encode({'username': data['username'], 'public_id' : data['public_id'], 'exp': datetime.now() + timedelta(days = 1)}, app.config['SECRET_KEY'])
+                token = token.decode('UTF-8')
+                code = 200
+                data = f({"userType": userType,'username': user.first().username}, *args, **kwargs)
+                if isinstance(data, tuple):
+                    code = data[1]
+                    data = data[0]
+                response = make_response(json.dumps(data), code)
+                response.headers.extend({'x-access-token': token})
+                log.debug("Response: {}".format(response))
+                return response
             else:
                 return 401
         except Exception as error:

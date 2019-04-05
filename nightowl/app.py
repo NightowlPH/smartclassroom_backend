@@ -5,15 +5,17 @@ from flask_cors import CORS, cross_origin
 import logging
 
 
-log=logging.getLogger(__name__)
-
 app = Flask('nightowl', instance_relative_config=True)
 app.config.from_object('config')
 app.config.from_pyfile('config.py')
 db = SQLAlchemy(app)
 api = Api(app)
 if app.config['DEBUG']:
-	CORS(app)
+    print("Running in debug mode")
+    logging.basicConfig(level=logging.DEBUG)
+    CORS(app, expose_headers=['x-access-token'])
+
+log=logging.getLogger(__name__)
 
 @app.errorhandler(500)
 def errorHandler(error):
