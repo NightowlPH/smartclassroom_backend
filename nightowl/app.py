@@ -17,6 +17,7 @@ if app.config['DEBUG']:
 
 @app.errorhandler(500)
 def errorHandler(error):
+    log.error("An error occured")
     log.exception(error)
     return 'An unexpexted error has occured. Please contact the administrators', 500
 
