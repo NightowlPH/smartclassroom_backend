@@ -223,8 +223,8 @@ class changePassword(Resource):
             user = Users.query.filter_by(username = current_user['username'])
             if user == None:
                 return 401
-            if len(data['new_password']) < 10:
-                return {"message": "password must be more than 10 characters"}
+            if len(data['new_password']) < 6:
+                return {"message": "password must be at least 6 characters"}
             password = bcrypt.hashpw(data['current_password'].encode('UTF-8'), user.first().userpassword.encode('UTF-8'))
             if user.first().userpassword.encode('UTF-8') != password:
                 return {'message': 'invalid password'}
