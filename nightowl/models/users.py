@@ -7,7 +7,7 @@ class Users(db.Model):
   __tablename__ = "users"
   id = db.Column(db.Integer, primary_key = True)
   username = db.Column(db.String(100), unique=True)
-  userpassword = db.Column(db.String(100))
+  userpassword = db.Column(db.String(255))
   Fname = db.Column(db.String(100))
   Lname = db.Column(db.String(100))
   cardID = db.Column(db.String(100), unique=True)

@@ -2,6 +2,7 @@ from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_restful import Resource, Api
 from flask_cors import CORS, cross_origin
+from flask_migrate import Migrate
 import logging
 
 
@@ -10,6 +11,7 @@ app.config.from_object('config')
 app.config.from_pyfile('config.py')
 db = SQLAlchemy(app)
 api = Api(app)
+migrate = Migrate(app, db)
 if app.config['DEBUG']:
     print("Running in debug mode")
     logging.basicConfig(level=logging.DEBUG)
@@ -96,6 +98,3 @@ api.add_resource(AllRoomStatus, '/roomsStatus')# MOBILE & OTHER
 api.add_resource(RoomStatusByRoomID, '/roomDevices/<int:id>')
 api.add_resource(AddDeviceToRoom, '/addRoomDevice/<int:room_id>')
 api.add_resource(Room_control_real_time_data, '/checkRoomControl')
-
-
-db.create_all()
