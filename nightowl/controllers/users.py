@@ -37,8 +37,8 @@ class users(Resource):
 			Request = request.get_json()
 			if not Request['username'] and not Request['userpassword'] and not Request['Lname'] and not Request['Fname'] and not Request['cardID']:
 				return {"message": "some parameters is missing"}
-			if len(Request['userpassword']) < 10:
-				return {"message": "password must be more than 10 characters"}
+			if len(Request['userpassword']) < 6:
+				return {"message": "password must be more than 6 characters"}
 			if Users.query.filter_by(username = Request['username']).count() == 0: #CHECK IF USER ALREADY EXIST
 				addUser = Users(username = Request['username'], userpassword = bcrypt.hashpw(Request['userpassword'].encode('UTF-8'), bcrypt.gensalt()),
 				                Lname = Request['Lname'], Fname = Request['Fname'], cardID = Request['cardID'], has_profile_picture = False)
@@ -160,96 +160,4 @@ class user(Resource):
 				except Exception as e:
 					photo = False
 					print(e,"error")
-
-				user = Users.query.filter_by(id = id).one()
-				user.username = request.values['username']
-				user.Fname = request.values['Fname']
-				user.Lname = request.values['Lname']
-				user.cardID = request.values['cardID']
-				if photo:
-					user.has_profile_picture = True
-				db.session.commit()
-		else:
-			return 401
-
-
-class getUserProfile(Resource):	# THIS IS IN SIDEBAR HEADER
-	def get(self):
-		token = None
-		if 'x-access-token' in request.headers:
-			token = request.headers['x-access-token']
-
-		if not token:
-			return jsonify({'message' : 'token is missing'})
-
-
-		try:
-			data = jwt.decode(token, app.config['SECRET_KEY'])
-			active_user = UsersLogs.query.filter_by(public_id = data['public_id'], username = data['username']).first()
-			user = Users.query.filter_by(username = active_user.username).first()
-			member = GroupMember.query.filter_by(user_id = user.id).first()
-			group = Group.query.filter_by(id = member.group_id).first()
-			data = users_schema.dump(user).data
-			if group.name[len(group.name)-1] == 's' or group.name[len(group.name)-1] == 'S':
-				data['group_name'] = group.name[0:len(group.name)-1]
-			else:
-				data['group_name'] = group.name
-			if active_user == None or user == None:
-				return 401
-			return data
-		except Exception as error:
-			error = str(error)
-			if error == "Signature has expired":
-				return {"message": "your token has been expired"}, 500
-			else:
-				return 500
-
-
-class changePassword(Resource):
-	@token_required
-	def post(current_user, self):
-		print(current_user)
-		if current_user['userType'] == "Admin" or current_user['userType'] == "User":
-			data = request.get_json()
-			user = Users.query.filter_by(username = current_user['username'])
-			if user == None:
-				return 401
-			if len(data['new_password']) < 10:
-				return {"message": "password must be more than 10 characters"}
-			password = bcrypt.hashpw(data['current_password'].encode('UTF-8'), user.first().userpassword.encode('UTF-8'))
-			if user.first().userpassword.encode('UTF-8') != password:
-				return {'message': 'invalid password'}
-			new_password = bcrypt.hashpw(data['new_password'].encode('UTF-8'), bcrypt.gensalt())
-			user.one().userpassword = new_password
-			db.session.commit()
-			return {'message': 'your password is successfully change'}
-		else:
-			return 401
-
-
-def get_user_type(user_id):
-    group_permission = []
-    member = GroupMember.query.filter_by(user_id = user_id).all()
-    if member == None:
-        return "Guest"
-    for queried_data in member:
-        group = Group.query.filter_by(id = queried_data.group_id).first()
-        permission = Permission.query.filter_by(id = group.permission_id).first()
-        group_permission.append(permission.name)
-    try:
-        group_permission.index('Admin')
-        return "Admin"
-    except Exception as error:
-        error = str(error)
-        print(error)
-    try:
-        group_permission.index('User')
-        return "User"
-    except Exception as error:
-        error = str(error)
-        print(error)
-
-    return "Guest"
-
-
 
