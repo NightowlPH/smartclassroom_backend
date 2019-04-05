@@ -2,7 +2,10 @@ from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_restful import Resource, Api
 from flask_cors import CORS, cross_origin
+import logging
 
+
+log=logging.getLogger(__name__)
 
 app = Flask('nightowl', instance_relative_config=True)
 app.config.from_object('config')
@@ -12,6 +15,10 @@ api = Api(app)
 if app.config['DEBUG']:
 	CORS(app)
 
+@app.errorhandler(500)
+def errorHandler(error):
+    log.exception(error)
+    return 'An unexpexted error has occured. Please contact the administrators', 500
 
 from nightowl.controllers.auditTrail import auditTrail,deleteAuditTrail, delAllAuditTrail
 from nightowl.controllers.remoteDesign import AllRemoteDesign
