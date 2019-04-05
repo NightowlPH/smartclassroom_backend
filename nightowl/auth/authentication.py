@@ -4,6 +4,9 @@ from datetime import datetime
 import jwt
 from nightowl.app import db
 import uuid
+import logging
+
+log = logging.getLogger(__name__)
 
 from ..models.users import Users
 from ..models.usersLogs import UsersLogs
@@ -37,8 +40,8 @@ def token_required(f):
             else:
                 return 401
         except Exception as error:
-            error = str(error)
-            print("==>>",error)
+            log.error("An error occured in checking the token.")
+            log.exception(error)
             if error == "Signature has expired":
                 return {"message": "your token has been expired"}, 500
             else:
