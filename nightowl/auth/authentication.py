@@ -26,9 +26,10 @@ def token_required(f):
 
         if not token:
             return jsonify({'message' : 'token is missing'})
-
+        log.debug("Token: {}".format(token))
         try:
             data = jwt.decode(token, app.config['SECRET_KEY'])
+            log.debug("Token data: {}".format(data))
             user_log = UsersLogs.query.filter_by(public_id = data['public_id'],username = data['username'])
             user = Users.query.filter_by(username =data['username'])
             if user.count() == 0 and user_log.count() == 0: # CHECK IF USER EXIST
@@ -38,14 +39,14 @@ def token_required(f):
                 user_log.one().last_request_time = datetime.strptime(datetime.strftime(datetime.today(),'%Y-%m-%d %I:%M %p'),'%Y-%m-%d %I:%M %p')
                 db.session.commit()
 
+                code = 200
+                ret = f({"userType": userType,'username': user.first().username}, *args, **kwargs)
+                if isinstance(data, tuple):
+                    code = ret[1]
+                    ret = ret[0]
+                response = make_response(json.dumps(ret), code)
                 token = jwt.encode({'username': data['username'], 'public_id' : data['public_id'], 'exp': datetime.now() + timedelta(days = 1)}, app.config['SECRET_KEY'])
                 token = token.decode('UTF-8')
-                code = 200
-                data = f({"userType": userType,'username': user.first().username}, *args, **kwargs)
-                if isinstance(data, tuple):
-                    code = data[1]
-                    data = data[0]
-                response = make_response(json.dumps(data), code)
                 response.headers.extend({'x-access-token': token})
                 log.debug("Response: {}".format(response))
                 return response

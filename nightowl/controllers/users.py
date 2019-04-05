@@ -5,6 +5,9 @@ import uuid
 import bcrypt
 import jwt
 import os
+import logging
+
+log = logging.getLogger(__name__)
 
 from ..auth.authentication import token_required
 
@@ -35,13 +38,14 @@ class users(Resource):
     def post(current_user, self):
         if current_user['userType'] == "Admin":
             Request = request.get_json()
-            if not Request['username'] and not Request['userpassword'] and not Request['Lname'] and not Request['Fname'] and not Request['cardID']:
+            if not Request['username'] or not Request['userpassword'] or not Request['Lname'] or not Request['Fname']:
                 return {"message": "some parameters is missing"}
+            cardID = Request.get('cardID', '').strip() or None # make sure its not set if an empty string
             if len(Request['userpassword']) < 6:
                 return {"message": "password must be more than 6 characters"}
             if Users.query.filter_by(username = Request['username']).count() == 0: #CHECK IF USER ALREADY EXIST
                 addUser = Users(username = Request['username'], userpassword = bcrypt.hashpw(Request['userpassword'].encode('UTF-8'), bcrypt.gensalt()),
-                                Lname = Request['Lname'], Fname = Request['Fname'], cardID = Request['cardID'], has_profile_picture = False)
+                                Lname = Request['Lname'], Fname = Request['Fname'], cardID = cardID, has_profile_picture = False)
                 db.session.add(addUser)
                 db.session.commit()
                 return {"message": "success"}, 200
@@ -138,9 +142,11 @@ class user(Resource):
 
     @token_required
     def put(current_user, self, id):
+        values = request.get_json()
         if current_user['userType'] == "Admin" or current_user['userType'] == "User":
-            query = Users.query.filter_by(username = request.values['username'])
-            query2 = Users.query.filter_by(cardID = request.values['cardID'])
+            log.debug("request values: {}".format(values))
+            query = Users.query.filter_by(username = values['username'])
+            query2 = Users.query.filter_by(cardID = values['cardID'])
 
             if query.count() > 0 and query.first().id != int(id):
                 return { "message": "username already exist"}
@@ -162,14 +168,16 @@ class user(Resource):
                     print(e,"error")
 
                 user = Users.query.filter_by(id = id).one()
-                user.username = request.values['username']
-                user.Fname = request.values['Fname']
-                user.Lname = request.values['Lname']
-                user.cardID = request.values['cardID']
+                user.username = values['username']
+                user.Fname = values['Fname']
+                user.Lname = values['Lname']
+                user.cardID = values['cardID'] or None
                 if photo:
                     user.has_profile_picture = True
                 db.session.commit()
         else:
+            log.warning("Current user {} is not an Admin or User"
+                        .format(request.values['username']));
             return 401
 
 
