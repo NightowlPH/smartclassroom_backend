@@ -15,7 +15,8 @@ class register(Resource):
         if len(Request['userpassword']) < 6:
             return {"message": "password must be more than 6 characters"}
         if Users.query.filter_by(username = Request['username']).count() == 0: #CHECK IF USER ALREADY EXIST
-            addUser = Users(username = Request['username'], userpassword = bcrypt.hashpw(Request['userpassword'].encode('UTF-8'), bcrypt.gensalt()),
+            pw = bcrypt.hashpw(Request['userpassword'].encode('UTF-8'), bcrypt.gensalt()).decode('utf-8')
+            addUser = Users(username = Request['username'], userpassword = pw,
             Lname = Request['Lname'], Fname = Request['Fname'], cardID = cardid, has_profile_picture = False)
             db.session.add(addUser)
             db.session.commit()

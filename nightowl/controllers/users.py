@@ -44,7 +44,8 @@ class users(Resource):
             if len(Request['userpassword']) < 6:
                 return {"message": "password must be more than 6 characters"}
             if Users.query.filter_by(username = Request['username']).count() == 0: #CHECK IF USER ALREADY EXIST
-                addUser = Users(username = Request['username'], userpassword = bcrypt.hashpw(Request['userpassword'].encode('UTF-8'), bcrypt.gensalt()),
+                pw = bcrypt.hashpw(Request['userpassword'].encode('UTF-8'), bcrypt.gensalt()).decode('utf-8')
+                addUser = Users(username = Request['username'], userpassword = pw,
                                 Lname = Request['Lname'], Fname = Request['Fname'], cardID = cardID, has_profile_picture = False)
                 db.session.add(addUser)
                 db.session.commit()
@@ -227,7 +228,7 @@ class changePassword(Resource):
             password = bcrypt.hashpw(data['current_password'].encode('UTF-8'), user.first().userpassword.encode('UTF-8'))
             if user.first().userpassword.encode('UTF-8') != password:
                 return {'message': 'invalid password'}
-            new_password = bcrypt.hashpw(data['new_password'].encode('UTF-8'), bcrypt.gensalt())
+            new_password = bcrypt.hashpw(data['new_password'].encode('UTF-8'), bcrypt.gensalt()).decode('utf-8')
             user.one().userpassword = new_password
             db.session.commit()
             return {'message': 'your password is successfully change'}
