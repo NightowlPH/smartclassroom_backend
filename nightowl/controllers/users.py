@@ -143,7 +143,7 @@ class user(Resource):
 
     @token_required
     def put(current_user, self, id):
-        values = request.get_json()
+        values = request.values
         if current_user['userType'] == "Admin" or current_user['userType'] == "User":
             log.debug("request values: {}".format(values))
             query = Users.query.filter_by(username = values['username'])
@@ -167,12 +167,14 @@ class user(Resource):
                 except Exception as e:
                     photo = False
                     print(e,"error")
-
+                cardID = values['cardID'] or None
+                if cardID == 'null':
+                    cardID = None
                 user = Users.query.filter_by(id = id).one()
                 user.username = values['username']
                 user.Fname = values['Fname']
                 user.Lname = values['Lname']
-                user.cardID = values['cardID'] or None
+                user.cardID = cardID
                 if photo:
                     user.has_profile_picture = True
                 db.session.commit()
