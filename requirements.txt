@@ -10,3 +10,4 @@ pymysql
 Flask-JWT
 bcrypt
 flask-mqtt
+blinker

@@ -1,9 +1,11 @@
-from flask import Flask, request
+from flask import Flask, request, got_request_exception
 from flask_sqlalchemy import SQLAlchemy
 from flask_restful import Resource, Api
 from flask_cors import CORS, cross_origin
 from flask_migrate import Migrate
-import logging
+import logging, sys
+from werkzeug.exceptions import NotFound, HTTPException
+from .exceptions import UnauthorizedError, UnexpectedError
 
 
 app = Flask('nightowl', instance_relative_config=True)
@@ -14,16 +16,15 @@ api = Api(app)
 migrate = Migrate(app, db)
 if app.config['DEBUG']:
     print("Running in debug mode")
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
     CORS(app, expose_headers=['x-access-token'])
 
 log=logging.getLogger(__name__)
 
-@app.errorhandler(500)
-def errorHandler(error):
-    log.error("An error occured")
-    log.exception(error)
-    return 'An unexpexted error has occured. Please contact the administrators', 500
+def log_exception(sender, exception, **extra):
+    sender.logger.exception(exception)
+
+got_request_exception.connect(log_exception, app)
 
 from nightowl.controllers.auditTrail import auditTrail,deleteAuditTrail, delAllAuditTrail
 from nightowl.controllers.remoteDesign import AllRemoteDesign
@@ -40,7 +41,6 @@ from nightowl.checkTag.checkTag import check_tag
 from nightowl.controllers.routeGuard import routeGuard
 from nightowl.controllers.register import register
 from nightowl.controllers.usersLogs import activeUsers, delActiveUser
-
 
 api.add_resource(login, '/login')
 api.add_resource(logout, '/logout')

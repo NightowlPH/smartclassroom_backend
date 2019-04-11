@@ -1,4 +1,5 @@
 from flask import request
+from ..exceptions import UnauthorizedError, UnexpectedError
 from nightowl.app import db
 from flask_restful import Resource
 import jwt
@@ -30,7 +31,7 @@ class login(Resource):
                 user_log = UsersLogs.query.filter_by(username = data['username'], public_id = data['public_id'])
                 user = Users.query.filter_by(username = data['username'])
                 if user.count() == 0:
-                    return 401
+                    raise UnauthorizedError()
                 if user_log.count() == 0:
                     return {"message": "user already logout"}
                 elif user_log.first().status != "active":
@@ -44,7 +45,7 @@ class login(Resource):
                 if error == "Signature has expired":
                     return {"message": "your token has been expired"}
                 else:
-                    return {"message": "Internal Server Error"}, 500
+                    raise UnexpectedError({"message": "Internal Server Error"})
 
         Request = request.get_json()
         if not Request['username']  and not Request['password']:
@@ -67,9 +68,9 @@ class login(Resource):
                         token = token.decode('UTF-8')
                         return {'token': token, 'userType': userType}
                 else:
-                    return {"message": "could not verify"}, 401
+                    raise UnauthorizedError({"message": "could not verify"})
             else:
-                return {"message": "could not verify"}, 401
+                raise UnauthorizedError({"message": "could not verify"})
 
 
 class logout(Resource):
@@ -90,9 +91,9 @@ class logout(Resource):
             error = str(error)
             print("==>>",error)
             if error == "Signature has expired":
-                return {"message": "your token has been expired"}, 500
+                raise UnexpectedError({"message": "your token has been expired"})
             else:
-                return {"message": "Internal Server Error"}, 500
+                raise UnexpectedError({"message": "Internal Server Error"})
 
 
 def add_active_user(username, public_id, time_login):
