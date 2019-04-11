@@ -84,7 +84,7 @@ class Get_account_photo(Resource):
             error = str(error)
             print("user photo",error)
             if error == "Signature has expired":
-                return {"message": "your token has been expired"}, 500
+                raise InternalServerError({"message": "your token has been expired"})
             else:
                 return 500
 
@@ -108,7 +108,7 @@ class editProfile(Resource):
             error = str(error)
             print("editProfile",error)
             if error == "Signature has expired":
-                return {"message": "your token has been expired"}, 500
+                raise InternalServerError({"message": "your token has been expired"})
             else:
                 return 500
 
@@ -212,7 +212,7 @@ class getUserProfile(Resource):    # THIS IS IN SIDEBAR HEADER
         except Exception as error:
             error = str(error)
             if error == "Signature has expired":
-                return {"message": "your token has been expired"}, 500
+                raise InternalServerError({"message": "your token has been expired"})
             else:
                 return 500
 

@@ -113,6 +113,6 @@ class getAllPer(Resource):
             error = str(error)
             print(error)
             if error == "Signature has expired":
-                return {"message": "your token has been expired"}, 500
+                raise InternalServerError({"message": "your token has been expired"})
             else:
                 return 500

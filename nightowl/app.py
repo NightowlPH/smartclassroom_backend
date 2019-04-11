@@ -28,7 +28,10 @@ def errorHandler(error):
 @app.errorhandler(401)
 def errorHandler(error):
     log.warning("Unauthorized access at {}".format(request.url))
-    return 'You are not authorized to access this page.', 401
+    if hasattr(error, description):
+        return description, 401
+    else:
+        return 'You are not authorized to access this page.', 401
 
 from nightowl.controllers.auditTrail import auditTrail,deleteAuditTrail, delAllAuditTrail
 from nightowl.controllers.remoteDesign import AllRemoteDesign

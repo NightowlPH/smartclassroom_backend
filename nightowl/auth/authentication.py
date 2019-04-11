@@ -57,9 +57,9 @@ def token_required(f):
             log.error("An error occured in checking the token.")
             log.exception(error)
             if error == "Signature has expired":
-                return {"message": "your token has been expired"}, 500
+                raise InternalServerError({"message": "your token has been expired"})
             else:
-                return {"message": "Internal Server Error"}, 500
+                raise InternalServerError({"message": "Internal Server Error"})
 
     return decorated
 

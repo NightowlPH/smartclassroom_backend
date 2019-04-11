@@ -45,7 +45,7 @@ class login(Resource):
                 if error == "Signature has expired":
                     return {"message": "your token has been expired"}
                 else:
-                    return {"message": "Internal Server Error"}, 500
+                    raise InternalServerError({"message": "Internal Server Error"})
 
         Request = request.get_json()
         if not Request['username']  and not Request['password']:
@@ -68,9 +68,9 @@ class login(Resource):
                         token = token.decode('UTF-8')
                         return {'token': token, 'userType': userType}
                 else:
-                    return {"message": "could not verify"}, 401
+                    raise Unauthorized({"message": "could not verify"})
             else:
-                return {"message": "could not verify"}, 401
+                raise Unauthorized({"message": "could not verify"})
 
 
 class logout(Resource):
@@ -91,9 +91,9 @@ class logout(Resource):
             error = str(error)
             print("==>>",error)
             if error == "Signature has expired":
-                return {"message": "your token has been expired"}, 500
+                raise InternalServerError({"message": "your token has been expired"})
             else:
-                return {"message": "Internal Server Error"}, 500
+                raise InternalServerError({"message": "Internal Server Error"})
 
 
 def add_active_user(username, public_id, time_login):
