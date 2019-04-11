@@ -1,4 +1,5 @@
 from flask import request
+from werkzeug.exceptions import Unauthorized, InternalServerError
 from nightowl.app import db
 from ..auth.authentication import token_required
 from flask_restful import Resource
@@ -27,7 +28,7 @@ class groups(Resource):
                 allGroup.append(data)
             return {"groups":allGroup}
         else:
-            return 401
+            raise Unauthorized()
 
     @token_required
     def post(current_user, self):
@@ -43,7 +44,7 @@ class groups(Resource):
             else:
                 return {"message": "already exist"}
         else:
-            return 401
+            raise Unauthorized()
 
 class group(Resource):
     @token_required
@@ -58,7 +59,7 @@ class group(Resource):
             db.session.commit()
             return {"response":'user successfully deleted'}
         else:
-            return 401
+            raise Unauthorized()
 
     @token_required
     def get(current_user, self, id):
@@ -73,7 +74,7 @@ class group(Resource):
             else:
                 return {"data": []}
         else:
-            return 401
+            raise Unauthorized()
 
     @token_required
     def put(current_user, self, id):
@@ -91,7 +92,7 @@ class group(Resource):
                 query.permission_id = Permission.query.filter_by(id = request_data['permission_id']).first().id
                 db.session.commit()
         else:
-            return 401
+            raise Unauthorized()
 
 class groupDetails(Resource): # THIS IS USER IN NAVBAT
     @token_required
@@ -105,7 +106,7 @@ class groupDetails(Resource): # THIS IS USER IN NAVBAT
             else:
                 return {"data": []}
         else:
-            return 401
+            raise Unauthorized()
 
 
 

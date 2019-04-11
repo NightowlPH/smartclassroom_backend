@@ -25,6 +25,11 @@ def errorHandler(error):
     log.exception(error)
     return 'An unexpexted error has occured. Please contact the administrators', 500
 
+@app.errorhandler(401)
+def errorHandler(error):
+    log.warning("Unauthorized access at {}".format(request.url))
+    return 'You are not authorized to access this page.', 401
+
 from nightowl.controllers.auditTrail import auditTrail,deleteAuditTrail, delAllAuditTrail
 from nightowl.controllers.remoteDesign import AllRemoteDesign
 from nightowl.controllers.devices import devices, device

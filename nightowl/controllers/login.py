@@ -1,4 +1,5 @@
 from flask import request
+from werkzeug.exceptions import Unauthorized, InternalServerError
 from nightowl.app import db
 from flask_restful import Resource
 import jwt
@@ -30,7 +31,7 @@ class login(Resource):
                 user_log = UsersLogs.query.filter_by(username = data['username'], public_id = data['public_id'])
                 user = Users.query.filter_by(username = data['username'])
                 if user.count() == 0:
-                    return 401
+                    raise Unauthorized()
                 if user_log.count() == 0:
                     return {"message": "user already logout"}
                 elif user_log.first().status != "active":

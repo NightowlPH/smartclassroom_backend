@@ -1,4 +1,5 @@
 from flask import make_response, request, jsonify
+from werkzeug.exceptions import Unauthorized, InternalServerError
 from functools import wraps
 from datetime import datetime, timedelta
 import jwt
@@ -33,7 +34,7 @@ def token_required(f):
             user_log = UsersLogs.query.filter_by(public_id = data['public_id'],username = data['username'])
             user = Users.query.filter_by(username =data['username'])
             if user.count() == 0 and user_log.count() == 0: # CHECK IF USER EXIST
-                return 401
+                raise Unauthorized()
             elif user.count() == 1 and user_log.count() == 1:
                 userType = get_user_type(user.first().id)
                 user_log.one().last_request_time = datetime.strptime(datetime.strftime(datetime.today(),'%Y-%m-%d %I:%M %p'),'%Y-%m-%d %I:%M %p')
@@ -51,7 +52,7 @@ def token_required(f):
                 log.debug("Response: {}".format(response))
                 return response
             else:
-                return 401
+                raise Unauthorized()
         except Exception as error:
             log.error("An error occured in checking the token.")
             log.exception(error)

@@ -1,4 +1,5 @@
 from flask import request, send_file
+from werkzeug.exceptions import Unauthorized, InternalServerError
 from nightowl.app import db
 from flask_restful import Resource
 import uuid
@@ -32,7 +33,7 @@ class users(Resource):
                 allUser.append(users_schema.dump(queried_user).data)
             return { "users": allUser }
         else:
-            return 401
+            raise Unauthorized()
 
     @token_required
     def post(current_user, self):
@@ -53,7 +54,7 @@ class users(Resource):
             else:
                 return {'message': 'already exist'}
         else:
-            return 401
+            raise Unauthorized()
 
 class Get_account_photo(Resource):
     def put(self): #send user profile picture
@@ -78,7 +79,7 @@ class Get_account_photo(Resource):
                     return {"message": "user has no profile picture"}
                 return send_file('image/user/'+str(user.id)+'.jpg', mimetype='image/jpg')
             else:
-                return 401
+                raise Unauthorized()
         except Exception as error:
             error = str(error)
             print("user photo",error)
@@ -127,7 +128,7 @@ class user(Resource):
                 users.delete()
             db.session.commit()
         else:
-            return 401
+            raise Unauthorized()
 
     @token_required
     def get(current_user, self, id): # GET USER INFO USING ID AND IT USE TO UPDATE USER
@@ -139,7 +140,7 @@ class user(Resource):
             else:
                 return {"response": "no user found"}
         else:
-            return 401
+            raise Unauthorized()
 
     @token_required
     def put(current_user, self, id):
@@ -181,7 +182,7 @@ class user(Resource):
         else:
             log.warning("Current user {} is not an Admin or User"
                         .format(request.values['username']));
-            return 401
+            raise Unauthorized()
 
 
 class getUserProfile(Resource):    # THIS IS IN SIDEBAR HEADER
@@ -206,7 +207,7 @@ class getUserProfile(Resource):    # THIS IS IN SIDEBAR HEADER
             else:
                 data['group_name'] = group.name
             if active_user == None or user == None:
-                return 401
+                raise Unauthorized()
             return data
         except Exception as error:
             error = str(error)
@@ -224,7 +225,7 @@ class changePassword(Resource):
             data = request.get_json()
             user = Users.query.filter_by(username = current_user['username'])
             if user == None:
-                return 401
+                raise Unauthorized()
             if len(data['new_password']) < 6:
                 return {"message": "password must be at least 6 characters"}
             password = bcrypt.hashpw(data['current_password'].encode('UTF-8'), user.first().userpassword.encode('UTF-8'))
@@ -235,7 +236,7 @@ class changePassword(Resource):
             db.session.commit()
             return {'message': 'your password is successfully change'}
         else:
-            return 401
+            raise Unauthorized()
 
 
 def get_user_type(user_id):
