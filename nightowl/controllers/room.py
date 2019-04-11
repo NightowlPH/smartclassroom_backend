@@ -1,5 +1,5 @@
 from flask import Flask, redirect, url_for, request,render_template,flash
-from werkzeug.exceptions import Unauthorized, InternalServerError
+from ..exceptions import UnauthorizedError, UnexpectedError
 from flask import Blueprint
 from nightowl.app import db
 from ..auth.authentication import token_required
@@ -25,7 +25,7 @@ class rooms(Resource):
                 allRoom.append(data)
             return {"rooms": allRoom}
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
     @token_required
     def post(current_user, self):
@@ -38,7 +38,7 @@ class rooms(Resource):
             else:
                 return {"message": "already exist"}
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
 class room(Resource):
     @token_required
@@ -51,7 +51,7 @@ class room(Resource):
             else:
                 return {"data": []}
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
 
     @token_required
@@ -65,7 +65,7 @@ class room(Resource):
             db.session.commit()
             return {"response":'user successfully deleted'}
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
     @token_required
     def put(current_user, self, id):
@@ -81,7 +81,7 @@ class room(Resource):
                 query.description = request_data['description']
                 db.session.commit()
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
 
 class roomDetails(Resource): # THIS IS USER IN NAVBAT
@@ -95,4 +95,4 @@ class roomDetails(Resource): # THIS IS USER IN NAVBAT
             else:
                 return {"data": []}
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()

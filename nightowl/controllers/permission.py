@@ -1,5 +1,5 @@
 from flask import Flask, redirect, url_for, request,render_template,flash
-from werkzeug.exceptions import Unauthorized, InternalServerError
+from ..exceptions import UnauthorizedError, UnexpectedError
 from flask import Blueprint
 from nightowl.app import db
 from ..auth.authentication import token_required
@@ -25,7 +25,7 @@ class permissions(Resource):
                 allPermission.append(permission_schema.dump(queried_permission).data)
             return {"permissions": allPermission}
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
     @token_required
     def post(current_user, self):
@@ -40,7 +40,7 @@ class permissions(Resource):
             else:
                 return {"message": "already exist"}
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
 class permission(Resource):
     @token_required
@@ -52,7 +52,7 @@ class permission(Resource):
             db.session.commit()
             return {"response":'permission successfully deleted'}
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
     @token_required
     def get(current_user, self, id):
@@ -66,7 +66,7 @@ class permission(Resource):
             else:
                 return {"data": []}
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
     @token_required
     def put(current_user, self, id):
@@ -82,7 +82,7 @@ class permission(Resource):
                 query.description = request_data['description']
                 db.session.commit()
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
 
 
@@ -101,7 +101,7 @@ class getAllPer(Resource):
             print(active_user)
             user = Users.query.filter_by(username = active_user.username)
             if user.first() == None:
-                raise Unauthorized()
+                raise UnauthorizedError()
             if user.count() == 1:
                 allPermission = []
                 permission_schema = PermissionSchema(only = ('id', 'name', 'description'))
@@ -113,6 +113,6 @@ class getAllPer(Resource):
             error = str(error)
             print(error)
             if error == "Signature has expired":
-                raise InternalServerError({"message": "your token has been expired"})
+                raise UnexpectedError({"message": "your token has been expired"})
             else:
                 return 500

@@ -1,5 +1,5 @@
 from flask import make_response, request, jsonify
-from werkzeug.exceptions import Unauthorized, InternalServerError
+from ..exceptions import UnauthorizedError
 from functools import wraps
 from datetime import datetime
 import jwt
@@ -30,7 +30,7 @@ def token_required(f):
         query = UsersLogs.query.filter_by(public_id = data['public_id'],username = data['username'])
         user = Users.query.filter_by(username =data['username'])
         if user.count() == 0 and query.count() == 0: # CHECK IF USER EXIST
-            raise Unauthorized()
+            raise UnauthorizedError()
         elif user.count() == 1 and query.count() == 1:
             public_id = str(uuid.uuid4())
             userType = get_user_type(user.first().id)
@@ -45,7 +45,7 @@ def token_required(f):
             db.session.commit()
             return f(user_details, *args, **kwargs)
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
         # except Exception as error:
         #     error = str(error)
         #     print("==>>",error)

@@ -1,5 +1,5 @@
 from flask import Flask, redirect, url_for, request,render_template,flash
-from werkzeug.exceptions import Unauthorized, InternalServerError
+from ..exceptions import UnauthorizedError, UnexpectedError
 from flask import Blueprint
 from nightowl.app import db
 from ..auth.authentication import token_required
@@ -23,7 +23,7 @@ class groupMember(Resource):
                 allUser.append(users_schema.dump(Users.query.filter_by(id = queried_member.user_id).first()).data)
             return {"members":allUser}
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
     @token_required
     def post(current_user, self, id):
@@ -37,9 +37,9 @@ class groupMember(Resource):
                         db.session.add(member)
                         db.session.commit()
             else:
-                raise Unauthorized()
+                raise UnauthorizedError()
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
 
 class shwNotMem(Resource):
@@ -53,7 +53,7 @@ class shwNotMem(Resource):
                     allUser.append(users_schema.dump(queried_user).data)
             return {"members": allUser}
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
 
 class deleteMember(Resource):
@@ -63,7 +63,7 @@ class deleteMember(Resource):
             GroupMember.query.filter_by(group_id = id, user_id = user_id).delete()
             db.session.commit()
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
 
 

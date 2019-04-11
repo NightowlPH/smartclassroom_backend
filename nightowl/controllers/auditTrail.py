@@ -1,5 +1,5 @@
 from flask import Flask, redirect, url_for, request,render_template,flash
-from werkzeug.exceptions import Unauthorized, InternalServerError
+from ..exceptions import UnauthorizedError, UnexpectedError
 from nightowl.app import db
 from ..auth.authentication import token_required
 from flask_restful import Resource
@@ -42,7 +42,7 @@ class auditTrail(Resource):
                 all_data.append(auditTrail)
             return {"auditTrail": all_data}
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
 class deleteAuditTrail(Resource):
     @token_required
@@ -51,7 +51,7 @@ class deleteAuditTrail(Resource):
             AuditTrail.query.filter_by(id = id).delete()
             db.session.commit()
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
 class delAllAuditTrail(Resource):
     @token_required
@@ -60,4 +60,4 @@ class delAllAuditTrail(Resource):
             AuditTrail.query.delete()
             db.session.commit()
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()

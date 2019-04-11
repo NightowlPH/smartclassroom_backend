@@ -1,5 +1,5 @@
 from flask import Flask, redirect, url_for, request,render_template,flash
-from werkzeug.exceptions import Unauthorized, InternalServerError
+from ..exceptions import UnauthorizedError, UnexpectedError
 from flask import Blueprint
 from nightowl.app import db
 from ..auth.authentication import token_required
@@ -28,7 +28,7 @@ class devices(Resource):
                 all_devices.append(data)
             return {'devices': all_devices}
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
     @token_required
     def post(current_user, self):
@@ -41,7 +41,7 @@ class devices(Resource):
             db.session.add(addDevice)
             db.session.commit()
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
 
 class device(Resource):
@@ -54,7 +54,7 @@ class device(Resource):
             db.session.commit()
             return {"response":'device successfully deleted'}
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
 
     @token_required
@@ -69,7 +69,7 @@ class device(Resource):
             else:
                 return {"data": []}
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
     @token_required
     def put(current_user, self, id):
@@ -87,4 +87,4 @@ class device(Resource):
                 query.remote_design_id = RemoteDesign.query.filter_by(id = request_data['remote_design_id']).first().id
                 db.session.commit()
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()

@@ -1,5 +1,5 @@
 from flask import Flask, redirect, url_for, request,render_template,flash
-from werkzeug.exceptions import Unauthorized, InternalServerError
+from ..exceptions import UnauthorizedError, UnexpectedError
 from flask import Blueprint
 from nightowl.app import db
 from ..auth.authentication import token_required
@@ -53,7 +53,7 @@ class roomStatus(Resource): # for angular frontend app
                 all_data["room_status"].append(data)
             return all_data
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
 
 
@@ -88,7 +88,7 @@ class AllRoomStatus(Resource): # for mobile and other app
                 all_data["room_status"].append(data)
             return all_data
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
 class RoomStatusByRoomID(Resource):
     @token_required
@@ -117,7 +117,7 @@ class RoomStatusByRoomID(Resource):
                     data['devices'].append(device_details)
             return data
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
 class RoomStatusByID(Resource): # for mobile and other app
     @token_required
@@ -148,7 +148,7 @@ class GetDeviceToAdd(Resource):
                         })
             return data
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
 class AddDeviceToRoom(Resource):
     @token_required
@@ -178,7 +178,7 @@ class AddDeviceToRoom(Resource):
             mqtt.publish("smartclassroom/reloadMqtt","true")
                 # print("ADD-->")
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
 class AllRoomStatusByID(Resource):
     @token_required
@@ -202,7 +202,7 @@ class AllRoomStatusByID(Resource):
             print("-----publish----")
             mqtt.publish("smartclassroom/"+str(data['room_name'])+"/"+str(data['device_name'])+"/"+str(data['ext_topic']),payload)
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
     @token_required
     def delete(current_user, self, room_status_id):
@@ -217,7 +217,7 @@ class AllRoomStatusByID(Resource):
             mqtt.publish("smartclassroom/reloadMqtt","true")
             print("delete-->")
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
 class Room_control_real_time_data(Resource):  # CHECK IF USER HAS REAL TIME IN ROOM CONTROL
     @token_required
@@ -233,7 +233,7 @@ class Room_control_real_time_data(Resource):  # CHECK IF USER HAS REAL TIME IN R
                 db.session.commit()
                 return {"room_control_updated": False}
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
 
 def get_room_status_details(room_status):

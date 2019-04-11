@@ -3,7 +3,7 @@ from flask import Blueprint
 from nightowl.app import db
 from ..auth.authentication import token_required
 from flask_restful import Resource
-from werkzeug.exceptions import Unauthorized, InternalServerError
+from ..exceptions import UnauthorizedError, UnexpectedError
 
 from nightowl.models.groupAccess import GroupAccess
 from nightowl.models.permission import Permission
@@ -28,7 +28,7 @@ class groupAccess(Resource):
                 "users": GroupMember.query.filter_by(group_id = queried_access.group_id).count()})
             return {"group": groupAccess}
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
     @token_required
     def post(current_user, self, id):
@@ -42,7 +42,7 @@ class groupAccess(Resource):
                 db.session.add(roomAccess)
                 db.session.commit()
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
 
 class shwNotGrpAccess(Resource):
@@ -60,7 +60,7 @@ class shwNotGrpAccess(Resource):
                     counter += 1
             return {"group": allGroup}
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
 class deleteGrpAccess(Resource):
     @token_required
@@ -73,6 +73,6 @@ class deleteGrpAccess(Resource):
             else:
                 return {"message": "group not found"}
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
 

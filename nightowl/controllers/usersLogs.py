@@ -1,5 +1,5 @@
 from flask import request
-from werkzeug.exceptions import Unauthorized, InternalServerError
+from ..exceptions import UnauthorizedError
 from nightowl.app import db
 from ..auth.authentication import token_required
 from flask_restful import Resource
@@ -23,7 +23,7 @@ class activeUsers(Resource):
                 active_user.append(data)
             return {"users": active_user}
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 
 class delActiveUser(Resource):
     @token_required
@@ -32,5 +32,5 @@ class delActiveUser(Resource):
             UsersLogs.query.filter_by(id = id).delete()
             db.session.commit()
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
 

@@ -1,5 +1,5 @@
 from flask import request
-from werkzeug.exceptions import Unauthorized, InternalServerError
+from ..exceptions import UnauthorizedError
 from nightowl.app import db
 from ..auth.authentication import token_required
 from flask_restful import Resource
@@ -19,4 +19,4 @@ class AllRemoteDesign(Resource):
                 all_data['remote_design'].append(remote_design_schema.dump(data).data)
             return all_data
         else:
-            raise Unauthorized()
+            raise UnauthorizedError()
