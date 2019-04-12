@@ -50,9 +50,9 @@ class users(Resource):
                                 Lname = Request['Lname'], Fname = Request['Fname'], cardID = cardID, has_profile_picture = False)
                 db.session.add(addUser)
                 db.session.commit()
-                return {"message": "success"}, 200
+                return {"message": "success"}
             else:
-                return {'message': 'already exist'}
+                raise UnexpectedError('already exist')
         else:
             raise UnauthorizedError()
 
@@ -188,7 +188,7 @@ class user(Resource):
 class getUserProfile(Resource):    # THIS IS IN SIDEBAR HEADER
 
     @token_required
-    def get(self):
+    def get(current_user, self):
         token = None
         if 'x-access-token' in request.headers:
             token = request.headers['x-access-token']
@@ -232,7 +232,7 @@ class changePassword(Resource):
             new_password = bcrypt.hashpw(data['new_password'].encode('UTF-8'), bcrypt.gensalt()).decode('utf-8')
             user.one().userpassword = new_password
             db.session.commit()
-            return {'message': 'your password is successfully change'}
+            return {'message': 'your password is successfully changed'}
         else:
             raise UnauthorizedError()
 

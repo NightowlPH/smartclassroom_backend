@@ -16,15 +16,20 @@ from nightowl.models.groupMember import GroupMember
 from nightowl.models.group import Group
 from nightowl.models.usersLogs import UsersLogs
 from nightowl.models.permission import Permission
+import logging
+
+log = logging.getLogger(__name__)
 
 
 
 class login(Resource):
     def post(self):
+        log.info("Logging in user {}".format(data["username"]))
         token = ''
         datetime_now = datetime.strptime(datetime.strftime(datetime.today(),'%Y-%m-%d %I:%M %p'),'%Y-%m-%d %I:%M %p')
         public_id = str(uuid.uuid4())
         if 'x-access-token' in request.headers:
+            log.debug("Already has an access token")
             token = request.headers['x-access-token']
             try:
                 data = jwt.decode(token, app.config['SECRET_KEY'])
@@ -33,9 +38,9 @@ class login(Resource):
                 if user.count() == 0:
                     raise UnauthorizedError()
                 if user_log.count() == 0:
-                    return {"message": "user already logout"}
+                    return {"message": "user already logged out"}
                 elif user_log.first().status != "active":
-                    return {"message": "user already logout"}
+                    return {"message": "user already logged out"}
                 token = jwt.encode({'username': data['username'], 'public_id' : public_id, 'exp': datetime_now + timedelta(days = 1)}, app.config['SECRET_KEY'])
                 token = token.decode('UTF-8')
                 userType = get_user_type(user.first().id)
@@ -43,13 +48,16 @@ class login(Resource):
             except Exception as error:
                 error = str(error)
                 if error == "Signature has expired":
-                    return {"message": "your token has been expired"}
+                    raise Unauthorized("your token has been expired")
                 else:
-                    raise UnexpectedError({"message": "Internal Server Error"})
+                    raise UnexpectedError("Internal Server Error")
 
         Request = request.get_json()
+        log.debug("Request data: {}".format(request.data))
+        log.debug("Request json: {}".format(request.get_json()))
+        log.debug("Request headers: {}".format(request.headers))
         if not Request['username']  and not Request['password']:
-            return {"message": "username or password is not define"}, 204
+            raise UnexpectedError("username or password is not define")
         else:
             user = Users.query.filter_by(username = Request['username'])
             if user.count() == 1: # CHECK IF USERNAME EXIST IN THE DATABASE
@@ -68,9 +76,9 @@ class login(Resource):
                         token = token.decode('UTF-8')
                         return {'token': token, 'userType': userType}
                 else:
-                    raise UnauthorizedError({"message": "could not verify"})
+                    raise UnauthorizedError("Wrong password")
             else:
-                raise UnauthorizedError({"message": "could not verify"})
+                raise UnauthorizedError("No user matching that name.")
 
 
 class logout(Resource):
