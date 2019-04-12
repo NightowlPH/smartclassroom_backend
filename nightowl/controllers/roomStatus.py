@@ -1,5 +1,5 @@
 from flask import Flask, redirect, url_for, request,render_template,flash
-from ..exceptions import UnauthorizedError, UnexpectedError
+from ..exceptions import UnauthorizedError, UnexpectedError, NotFoundError
 from flask import Blueprint
 from nightowl.app import db
 from ..auth.authentication import token_required
@@ -125,10 +125,10 @@ class RoomStatusByID(Resource): # for mobile and other app
         if current_user['userType'] == "Admin":
             room_status = RoomStatus.query.filter_by(id = room_status_id).first()
             if room_status == None:
-                return {"message": "room status not found"}
+                raise NotFoundError("room status not found")
             return {"id": room_status.id, "status": room_status.status}
         else:
-            401
+            raise UnauthorizedError()
 
 
 class GetDeviceToAdd(Resource):
