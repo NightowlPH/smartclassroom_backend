@@ -1,4 +1,5 @@
-from werkzeug.exceptions import Unauthorized, InternalServerError, NotFound
+from werkzeug.exceptions import (Unauthorized, InternalServerError, NotFound,
+                                 BadRequest)
 
 class MyBaseException(Exception):
     def __init__(self, description="Really unexpected error."):
@@ -8,12 +9,19 @@ class MyBaseException(Exception):
     def __str__(self):
         return "{}".format(self.description)
 
+
 class NotFoundError(MyBaseException, NotFound):
     """Raised when a resource couldn't be found"""
     def __init__(self, description="The resource could not be found."):
         super().__init__(self)
         self.description = description
 
+
+class InvalidDataError(MyBaseException, BadRequest):
+    """Raised when we received bad data."""
+    def __init__(self, description="You sent invalid data."):
+        super().__init__(self)
+        self.description = description
 
 
 class UnauthorizedError(MyBaseException, Unauthorized):
