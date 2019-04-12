@@ -24,7 +24,6 @@ log = logging.getLogger(__name__)
 
 class login(Resource):
     def post(self):
-        log.info("Logging in user {}".format(data["username"]))
         token = ''
         datetime_now = datetime.strptime(datetime.strftime(datetime.today(),'%Y-%m-%d %I:%M %p'),'%Y-%m-%d %I:%M %p')
         public_id = str(uuid.uuid4())
