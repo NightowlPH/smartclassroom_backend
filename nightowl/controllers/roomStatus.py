@@ -191,8 +191,8 @@ class AllRoomStatusByID(Resource):
             if room_status == None:
                 raise NotFoundError("room status not found")
 
-            log.debug("Received payload: {}".format(payload))
             payload = request.get_json()['value']
+            log.debug("Received payload: {}".format(payload))
             print(type(payload),payload)
             if payload == True:
                 payload = "true"
