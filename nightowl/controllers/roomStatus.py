@@ -1,5 +1,6 @@
 from flask import Flask, redirect, url_for, request,render_template,flash
-from ..exceptions import UnauthorizedError, UnexpectedError
+from ..exceptions import (UnauthorizedError, UnexpectedError, NotFoundError,
+                          InvalidDataError)
 from flask import Blueprint
 from nightowl.app import db
 from ..auth.authentication import token_required
@@ -7,6 +8,7 @@ from flask_restful import Resource
 from datetime import datetime
 from mqtt import mqtt
 import json
+import logging
 
 from nightowl.models.roomStatus import RoomStatus
 from nightowl.models.room import Room
@@ -14,6 +16,7 @@ from nightowl.models.devices import Devices
 from nightowl.models.remoteDesign import RemoteDesign
 from nightowl.models.usersLogs import UsersLogs
 
+log = logging.getLogger(__name__)
 
 class roomStatus(Resource): # for angular frontend app
     @token_required
@@ -99,7 +102,7 @@ class RoomStatusByRoomID(Resource):
             data = {"room_id": room.id,"room_name": room.name, "date": datetime.strftime(datetime.today(),'%B %d %Y %A') , "devices": []}
 
             if room == None:
-                return {"message": "room not found"}
+                raise NotFoundError("room not found")
             devices = RoomStatus.query.filter_by(room_id = room.id).all()
             for device in devices:
                 queried_deivce = Devices.query.filter_by(id = device.device_id).first()
@@ -125,10 +128,10 @@ class RoomStatusByID(Resource): # for mobile and other app
         if current_user['userType'] == "Admin":
             room_status = RoomStatus.query.filter_by(id = room_status_id).first()
             if room_status == None:
-                return {"message": "room status not found"}
+                raise NotFoundError("room status not found")
             return {"id": room_status.id, "status": room_status.status}
         else:
-            401
+            raise UnauthorizedError()
 
 
 class GetDeviceToAdd(Resource):
@@ -158,12 +161,12 @@ class AddDeviceToRoom(Resource):
             data = request.get_json()
 
             if room == None:
-                    return {"message": "room not found"}
+                    raise NotFoundError("room not found")
             for device_id in data:
                 device = Devices.query.filter_by(id = device_id).first()
                 remoteDesign = RemoteDesign.query.filter_by(id = device.remote_design_id).first()
                 if device == None:
-                    return {"message": "device not found"}
+                    raise NotFoundError("device not found")
                 if remoteDesign.name == "Temperature Slider":
                     status = 24
                 else:
@@ -186,18 +189,19 @@ class AllRoomStatusByID(Resource):
         if current_user['userType'] == "Admin" or current_user['userType'] == "User":
             room_status = RoomStatus.query.filter_by(id = room_status_id).first()
             if room_status == None:
-                return {"message": "room status not found"}
+                raise NotFoundError("room status not found")
 
             payload = request.get_json()['value']
+            log.debug("Received payload: {}".format(payload))
             print(type(payload),payload)
             if payload == True:
                 payload = "true"
             elif payload == False:
                 payload = "false"
-            elif type(payload) == int and int(payload) >=16 and int(payload) <= 26:
+            elif isinstance(payload, int) and payload>=16 and payload<=26:
                 payload = int(payload)
             else:
-                return {"message": "invalid payload"}
+                raise InvalidDataError("Invalid payload")
             data = get_room_status_details(room_status)
             print("-----publish----")
             mqtt.publish("smartclassroom/"+str(data['room_name'])+"/"+str(data['device_name'])+"/"+str(data['ext_topic']),payload)
@@ -209,7 +213,7 @@ class AllRoomStatusByID(Resource):
         if current_user['userType'] == "Admin":
             room_status = RoomStatus.query.filter_by(id = room_status_id)
             if room_status.count() == 0:
-                return {"message": "room device not found"}
+                raise NotFoundError("room device not found")
 
             data = get_room_status_details(room_status.first())
             room_status.delete()
@@ -225,7 +229,7 @@ class Room_control_real_time_data(Resource):  # CHECK IF USER HAS REAL TIME IN R
         if current_user['userType'] == "Admin" or current_user['userType'] == "User":
             user = UsersLogs.query.filter_by(username = current_user['username'])
             if user.count() == 0 or user.count() > 1:
-                return {"message": "user is not currently login"}
+                UnauthorizedError("user is not currently login")
             if user.first().room_control_real_time_data:
                 return {"room_control_updated": True}
             if not user.first().room_control_real_time_data:
