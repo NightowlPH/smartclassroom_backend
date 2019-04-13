@@ -8,6 +8,7 @@ from flask_restful import Resource
 from datetime import datetime
 from mqtt import mqtt
 import json
+import logging
 
 from nightowl.models.roomStatus import RoomStatus
 from nightowl.models.room import Room
@@ -15,6 +16,7 @@ from nightowl.models.devices import Devices
 from nightowl.models.remoteDesign import RemoteDesign
 from nightowl.models.usersLogs import UsersLogs
 
+log = logging.getLogger(__name__)
 
 class roomStatus(Resource): # for angular frontend app
     @token_required
