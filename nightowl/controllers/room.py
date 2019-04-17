@@ -1,5 +1,5 @@
-from flask import Flask, redirect, url_for, request,render_template,flash
-from ..exceptions import UnauthorizedError, UnexpectedError
+from flask import Flask, redirect, url_for, request,render_template,flash, g
+from ..exceptions import UnauthorizedError, UnexpectedError, InvalidDataError
 from flask import Blueprint
 from nightowl.app import db
 from ..auth.authentication import token_required
@@ -15,8 +15,9 @@ room_schema = RoomSchema(only = ( 'id', 'name', 'description' ))
 
 class rooms(Resource):
     @token_required
-    def get(current_user, self):
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
+    def get(self):
+        current_user = g.current_user
+        if current_user.userType == "Admin" or current_user.userType == "User":
             allRoom = []
             rooms = Room.query.all()
             for queried_room in rooms:
@@ -28,8 +29,9 @@ class rooms(Resource):
             raise UnauthorizedError()
 
     @token_required
-    def post(current_user, self):
-        if current_user['userType'] == "Admin":
+    def post(self):
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             Request = request.get_json()
             addRoom = room_schema.load(Request, session = db.session).data
             if Room.query.filter_by(name = addRoom.name).count() == 0:
@@ -42,8 +44,9 @@ class rooms(Resource):
 
 class room(Resource):
     @token_required
-    def get(current_user, self, id):
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
+    def get(self, id):
+        current_user = g.current_user
+        if current_user.userType == "Admin" or current_user.userType == "User":
             query = Room.query.filter_by(id = id)
             if query.count() != 0:
                 room = room_schema.dump(query.first()).data
@@ -55,10 +58,11 @@ class room(Resource):
 
 
     @token_required
-    def delete(current_user, self, id):
-        if current_user['userType'] == "Admin":
+    def delete(self, id):
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             if RoomStatus.query.filter_by(room_id = id).count() != 0:
-                return {"message": "please remove devices before you delete room"}
+                raise InvalidDataError("please remove devices before you delete room")
             if GroupAccess.query.filter_by(group_id = id).count() !=0:
                 GroupAccess.query.filter_by(group_id = id).delete()
             Room.query.filter_by(id = id).delete()
@@ -68,8 +72,9 @@ class room(Resource):
             raise UnauthorizedError()
 
     @token_required
-    def put(current_user, self, id):
-        if current_user['userType'] == "Admin":
+    def put(self, id):
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             request_data = request.get_json()
 
             query = Room.query.filter_by(name = request_data['name'])
@@ -86,7 +91,8 @@ class room(Resource):
 
 class roomDetails(Resource): # THIS IS USER IN NAVBAT
     @token_required
-    def get(current_user, self, id):
+    def get(self, id):
+        current_user = g.current_user
         if current_user == "Admin" or current_user == "User":
             query = Room.query.filter_by(id = id)
             if query.count() != 0:

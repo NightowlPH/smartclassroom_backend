@@ -1,4 +1,4 @@
-from flask import request, send_file, jsonify
+from flask import request, send_file, jsonify, g
 from ..exceptions import UnauthorizedError, UnexpectedError
 from nightowl.app import db
 from flask_restful import Resource
@@ -25,10 +25,11 @@ from nightowl.schema.users import users_schema,addUsers_schema
 
 class users(Resource):
     @token_required
-    def get(current_user, self):
+    def get(self):
+        current_user = g.current_user
         allUser = []
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
-            users = Users.query.filter(Users.username != current_user['username']).all()
+        if current_user.userType == "Admin" or current_user.userType == "User":
+            users = Users.query.filter(Users.username != current_user.username).all()
             for queried_user in users:
                 allUser.append(users_schema.dump(queried_user).data)
             return { "users": allUser }
@@ -36,8 +37,9 @@ class users(Resource):
             raise UnauthorizedError()
 
     @token_required
-    def post(current_user, self):
-        if current_user['userType'] == "Admin":
+    def post(self):
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             Request = request.get_json()
             if not Request['username'] or not Request['userpassword'] or not Request['Lname'] or not Request['Fname']:
                 return {"message": "some parameters is missing"}
@@ -90,34 +92,17 @@ class Get_account_photo(Resource):
 
 
 class editProfile(Resource):
+    @token_required
     def get(self): # GET USER INFO USING TOKEN
-        token = None
-        if 'x-access-token' in request.headers:
-            token = request.headers['x-access-token']
-
-        if not token:
-            raise UnauthorizedError({'message' : 'token is missing'})
-
-
-        try:
-            data = jwt.decode(token, app.config['SECRET_KEY'])
-            active_user = UsersLogs.query.filter_by(public_id = data['public_id'], username = data['username']).first()
-            user = Users.query.filter_by(username = active_user.username).first()
-            return users_schema.dump(user)
-        except Exception as error:
-            error = str(error)
-            print("editProfile",error)
-            if error == "Signature has expired":
-                raise UnexpectedError({"message": "your token has been expired"})
-            else:
-                return 500
-
+        current_user = g.current_user
+        return users_schema.dump(current_user)
 
 
 class user(Resource):
     @token_required
-    def delete(current_user, self, id):
-        if current_user['userType'] == "Admin":
+    def delete(self, id):
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             if UsersLogs.query.filter_by(username = Users.query.filter_by(id = id).first().username).first():
                 return {"message": "user is currently login"}
             members = GroupMember.query.filter_by(user_id = id)
@@ -131,8 +116,9 @@ class user(Resource):
             raise UnauthorizedError()
 
     @token_required
-    def get(current_user, self, id): # GET USER INFO USING ID AND IT USE TO UPDATE USER
-        if current_user['userType'] == "Admin":
+    def get(self, id): # GET USER INFO USING ID AND IT USE TO UPDATE USER
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             query = Users.query.filter_by(id = id)
             if query.count() != 0:
                 user = users_schema.dump(query.first()).data
@@ -143,9 +129,10 @@ class user(Resource):
             raise UnauthorizedError()
 
     @token_required
-    def put(current_user, self, id):
+    def put(self, id):
+        current_user = g.current_user
         values = request.values
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
+        if current_user.userType == "Admin" or current_user.userType == "User":
             log.debug("request values: {}".format(values))
             query = Users.query.filter_by(username = values['username'])
             query2 = Users.query.filter_by(cardID = values['cardID'])
@@ -188,40 +175,27 @@ class user(Resource):
 class getUserProfile(Resource):    # THIS IS IN SIDEBAR HEADER
 
     @token_required
-    def get(current_user, self):
-        token = None
-        if 'x-access-token' in request.headers:
-            token = request.headers['x-access-token']
-
-        try:
-            data = jwt.decode(token, app.config['SECRET_KEY'])
-            active_user = UsersLogs.query.filter_by(public_id = data['public_id'], username = data['username']).first()
-            user = Users.query.filter_by(username = active_user.username).first()
-            member = GroupMember.query.filter_by(user_id = user.id).first()
-            group = Group.query.filter_by(id = member.group_id).first()
-            data = users_schema.dump(user).data
-            if group.name[len(group.name)-1] == 's' or group.name[len(group.name)-1] == 'S':
-                data['group_name'] = group.name[0:len(group.name)-1]
-            else:
-                data['group_name'] = group.name
-            if active_user == None or user == None:
-                raise UnauthorizedError()
-            return data
-        except Exception as error:
-            error = str(error)
-            if error == "Signature has expired":
-                raise UnexpectedError({"message": "your token has been expired"})
-            else:
-                return 500
-
+    def get(self):
+        user = g.current_user
+        member = GroupMember.query.filter_by(user_id = user.id).first()
+        group = Group.query.filter_by(id = member.group_id).first()
+        data = users_schema.dump(user).data
+        if group.name[len(group.name)-1] == 's' or group.name[len(group.name)-1] == 'S':
+            data['group_name'] = group.name[0:len(group.name)-1]
+        else:
+            data['group_name'] = group.name
+        if user is None:
+            raise UnauthorizedError()
+        return data
 
 class changePassword(Resource):
     @token_required
-    def post(current_user, self):
+    def post(self):
+        current_user = g.current_user
         print(current_user)
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
+        if current_user.userType == "Admin" or current_user.userType == "User":
             data = request.get_json()
-            user = Users.query.filter_by(username = current_user['username'])
+            user = Users.query.filter_by(username = current_user.username)
             if user == None:
                 raise UnauthorizedError()
             if len(data['new_password']) < 6:

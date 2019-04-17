@@ -1,4 +1,4 @@
-from flask import request
+from flask import request, g
 from ..exceptions import UnauthorizedError
 from nightowl.app import db
 from ..auth.authentication import token_required
@@ -12,8 +12,9 @@ from nightowl.schema.usersLogs import users_logs_schema
 
 class activeUsers(Resource):
     @token_required
-    def get(current_user, self):
-        if current_user['userType'] == "Admin":
+    def get(self):
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             active_user = []
             user = UsersLogs.query.all()
             for queried_user in user:
@@ -27,8 +28,9 @@ class activeUsers(Resource):
 
 class delActiveUser(Resource):
     @token_required
-    def delete(current_user, self, id):
-        if current_user['userType'] == "Admin":
+    def delete(self, id):
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             UsersLogs.query.filter_by(id = id).delete()
             db.session.commit()
         else:

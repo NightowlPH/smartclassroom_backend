@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, request,render_template,flash
+from flask import Flask, redirect, url_for, request,render_template,flash, g
 from ..exceptions import UnauthorizedError, UnexpectedError
 from nightowl.app import db
 from ..auth.authentication import token_required
@@ -12,8 +12,9 @@ from nightowl.models.auditTrail import AuditTrail
 
 class auditTrail(Resource):
     @token_required
-    def get(current_user, self):
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
+    def get(self):
+        current_user = g.current_user
+        if current_user.userType == "Admin" or current_user.userType == "User":
             all_data = []
             query = AuditTrail.query.all()
             for queried_auditTrail in query:
@@ -46,8 +47,9 @@ class auditTrail(Resource):
 
 class deleteAuditTrail(Resource):
     @token_required
-    def delete(current_user, self,id):
-        if current_user['userType'] == "Admin":
+    def delete(self,id):
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             AuditTrail.query.filter_by(id = id).delete()
             db.session.commit()
         else:
@@ -55,8 +57,9 @@ class deleteAuditTrail(Resource):
 
 class delAllAuditTrail(Resource):
     @token_required
-    def delete(current_user,self):
-        if current_user['userType'] == "Admin":
+    def delete(self):
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             AuditTrail.query.delete()
             db.session.commit()
         else:

@@ -1,4 +1,4 @@
-from flask import request
+from flask import request, g
 from ..exceptions import UnauthorizedError
 from nightowl.app import db
 from ..auth.authentication import token_required
@@ -11,8 +11,9 @@ from nightowl.models.remoteDesign import RemoteDesign
 
 class AllRemoteDesign(Resource):
     @token_required
-    def get(current_user, self):
-        if current_user['userType'] == "Admin":
+    def get(self):
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             all_data = {"remote_design": []}
             datas = RemoteDesign.query.all()
             for data in datas:

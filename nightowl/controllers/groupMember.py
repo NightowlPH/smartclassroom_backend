@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, request,render_template,flash
+from flask import Flask, redirect, url_for, request,render_template,flash, g
 from ..exceptions import UnauthorizedError, UnexpectedError
 from flask import Blueprint
 from nightowl.app import db
@@ -15,8 +15,9 @@ users_schema = UsersSchema(only=('id','username','Fname','Lname','cardID'))
 
 class groupMember(Resource):
     @token_required
-    def get(current_user, self, id):
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
+    def get(self, id):
+        current_user = g.current_user
+        if current_user.userType == "Admin" or current_user.userType == "User":
             allUser = []
             query = GroupMember.query.filter_by(group_id = id).all()
             for queried_member in query:
@@ -26,8 +27,9 @@ class groupMember(Resource):
             raise UnauthorizedError()
 
     @token_required
-    def post(current_user, self, id):
-        if current_user['userType'] == "Admin":
+    def post(self, id):
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             request_data = request.get_json()
             if len(request_data) !=0:
                 for data in request_data:
@@ -44,8 +46,9 @@ class groupMember(Resource):
 
 class shwNotMem(Resource):
     @token_required
-    def get(current_user, self, id):
-        if current_user['userType'] == "Admin":
+    def get(self, id):
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             allUser = []
             query = Users.query.all()
             for queried_user in query:
@@ -58,28 +61,13 @@ class shwNotMem(Resource):
 
 class deleteMember(Resource):
     @token_required
-    def delete(current_user, self, id, user_id):
-        if current_user['userType'] == "Admin":
+    def delete(self, id, user_id):
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             GroupMember.query.filter_by(group_id = id, user_id = user_id).delete()
             db.session.commit()
         else:
             raise UnauthorizedError()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 # user = Users.query.first()
         # group = Group.query.first()

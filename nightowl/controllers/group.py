@@ -1,55 +1,63 @@
-from flask import request
-from ..exceptions import UnauthorizedError, UnexpectedError
+from flask import request, g
+from ..exceptions import UnauthorizedError, UnexpectedError, InvalidDataError
 from nightowl.app import db
 from ..auth.authentication import token_required
 from flask_restful import Resource
 from datetime import datetime
+import logging
 
 from ..models.group import Group
 from nightowl.models.groupAccess import GroupAccess
 from nightowl.models.groupMember import GroupMember
 from nightowl.models.room import Room
 from nightowl.models.permission import Permission
+from sqlalchemy import and_
+
+log = logging.getLogger(__name__)
 
 from nightowl.schema.group import GroupSchema
 
 class groups(Resource):
     @token_required
-    def get(current_user, self):
+    def get(self):
+        current_user = g.current_user
         groups_schema = GroupSchema(only=('id','name', 'description', 'permission_id'))
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
+        if current_user.userType == "Admin" or current_user.userType == "User":
             allGroup = []
             group = Group.query.all()
             for queried_group in group:
                 data = groups_schema.dump(queried_group).data
                 data['members'] = GroupMember.query.filter_by(group_id = queried_group.id).count()
-                permission = Permission.query.filter_by(id = queried_group.permission_id).first()
-                data['permission_name'] = permission.name
+                data['permission_name'] = queried_group.permission.name
                 allGroup.append(data)
             return {"groups":allGroup}
         else:
             raise UnauthorizedError()
 
     @token_required
-    def post(current_user, self):
+    def post(self):
+        current_user = g.current_user
         print("PASS ADD GROUP")
-        if current_user['userType'] == "Admin":
+        if current_user.userType == "Admin":
             data = request.get_json()
             print("--------------",data)
             if Group.query.filter_by(name = data['name']).count() == 0:
                 group = Group(name = data['name'], description = data['description'])
-                group.permission = Permission.query.filter_by(id = int(data['permission_id'])).first()
+                global_access = GroupAccess()
+                global_access.group = group
+                global_access.permission = Permission.query.filter_by(id = int(data['permission_id'])).first()
                 db.session.add(group)
                 db.session.commit()
             else:
-                return {"message": "already exist"}
+                raise InvalidDataError("already exist")
         else:
             raise UnauthorizedError()
 
 class group(Resource):
     @token_required
-    def delete(current_user, self, id):
-        if current_user['userType'] == "Admin":
+    def delete(self, id):
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             query = Group.query.filter_by(name = "Guard").first()
             if GroupMember.query.filter_by(group_id = id).count() != 0:
                 GroupMember.query.filter_by(group_id = id).delete()
@@ -62,14 +70,14 @@ class group(Resource):
             raise UnauthorizedError()
 
     @token_required
-    def get(current_user, self, id):
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
-            groups_schema = GroupSchema(only=('id','name', 'description','permission_id'))
+    def get(self, id):
+        current_user = g.current_user
+        if current_user.userType == "Admin" or current_user.userType == "User":
+            groups_schema = GroupSchema(only=('id','name', 'description', "permission_id"))
             query = Group.query.filter_by(id = id)
             if query.count() != 0:
                 group = groups_schema.dump(query.first()).data
-                permission = Permission.query.filter_by(id = group['permission_id']).first()
-                group['permission_name'] = permission.name
+                group['permission_name'] = query.first().permission.name
                 return {"data": group}
             else:
                 return {"data": []}
@@ -77,27 +85,34 @@ class group(Resource):
             raise UnauthorizedError()
 
     @token_required
-    def put(current_user, self, id):
-        if current_user['userType'] == "Admin":
+    def put(self, id):
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             request_data = request.get_json()
+            log.debug("Request data: {}".format(request_data))
             query = Group.query.filter_by(name = request_data['name'])
             if query.count() > 0 and int(id) != query.first().id:
-                return{"message": "group already exist"}
-            if Permission.query.filter_by(id = request_data['permission_id']).first() == None:
-                return{"message": "permission type does not exit"}
+                raise InvalidDataError("group already exist")
+
+            if 'permission_id' in request_data.keys() and \
+                    Permission.query.get(request_data['permission_id'])is None:
+                raise InvalidDataError("permission type does not exit")
             else:
-                query = Group.query.filter_by(id = id).one()
-                query.name = request_data['name']
-                query.description = request_data['description']
-                query.permission_id = Permission.query.filter_by(id = request_data['permission_id']).first().id
+                group = Group.query.get(id)
+                group.name = request_data['name']
+                group.description = request_data['description']
+                if 'permission_id' in request_data:
+                    permid = request_data['permission_id']
+                    group.permission = Permission.query.get(permid)
                 db.session.commit()
         else:
             raise UnauthorizedError()
 
 class groupDetails(Resource): # THIS IS USER IN NAVBAT
     @token_required
-    def get(current_user, self, id):
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
+    def get(self, id):
+        current_user = g.current_user
+        if current_user.userType == "Admin" or current_user.userType == "User":
             groups_schema = GroupSchema(only=('id','name', 'description'))
             query = Group.query.filter_by(id = id)
             if query.count() != 0:

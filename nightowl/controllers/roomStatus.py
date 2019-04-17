@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, request,render_template,flash
+from flask import Flask, redirect, url_for, request,render_template, flash, g
 from ..exceptions import (UnauthorizedError, UnexpectedError, NotFoundError,
                           InvalidDataError)
 from flask import Blueprint
@@ -20,8 +20,9 @@ log = logging.getLogger(__name__)
 
 class roomStatus(Resource): # for angular frontend app
     @token_required
-    def get(current_user, self):
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
+    def get(self):
+        current_user = g.current_user
+        if current_user.userType == "Admin" or current_user.userType == "User":
             all_data = {"room_status": []}
 
             rooms = Room.query.all()
@@ -62,8 +63,9 @@ class roomStatus(Resource): # for angular frontend app
 
 class AllRoomStatus(Resource): # for mobile and other app
     @token_required
-    def get(current_user, self):
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
+    def get(self):
+        current_user = g.current_user
+        if current_user.userType == "Admin" or current_user.userType == "User":
             all_data = {"room_status": []}
 
             rooms = Room.query.all()
@@ -95,8 +97,9 @@ class AllRoomStatus(Resource): # for mobile and other app
 
 class RoomStatusByRoomID(Resource):
     @token_required
-    def get(current_user, self, id):
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
+    def get(self, id):
+        current_user = g.current_user
+        if current_user.userType == "Admin" or current_user.userType == "User":
 
             room = Room.query.filter_by(id = id).first()
             data = {"room_id": room.id,"room_name": room.name, "date": datetime.strftime(datetime.today(),'%B %d %Y %A') , "devices": []}
@@ -124,8 +127,9 @@ class RoomStatusByRoomID(Resource):
 
 class RoomStatusByID(Resource): # for mobile and other app
     @token_required
-    def get(current_user, self, room_status_id):
-        if current_user['userType'] == "Admin":
+    def get(self, room_status_id):
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             room_status = RoomStatus.query.filter_by(id = room_status_id).first()
             if room_status == None:
                 raise NotFoundError("room status not found")
@@ -136,8 +140,9 @@ class RoomStatusByID(Resource): # for mobile and other app
 
 class GetDeviceToAdd(Resource):
     @token_required
-    def get(current_user, self, room_id): # get all device not is not added to the room
-        if current_user['userType'] == "Admin":
+    def get(self, room_id): # get all device not is not added to the room
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             data = {"devices": []}
 
             devices = Devices.query.all()
@@ -155,8 +160,9 @@ class GetDeviceToAdd(Resource):
 
 class AddDeviceToRoom(Resource):
     @token_required
-    def post(current_user, self, room_id):
-        if current_user['userType'] == "Admin":
+    def post(self, room_id):
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             room = Room.query.filter_by(id = room_id).first()
             data = request.get_json()
 
@@ -185,8 +191,9 @@ class AddDeviceToRoom(Resource):
 
 class AllRoomStatusByID(Resource):
     @token_required
-    def put(current_user, self, room_status_id): #CONTROL DEVICES
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
+    def put(self, room_status_id): #CONTROL DEVICES
+        current_user = g.current_user
+        if current_user.userType == "Admin" or current_user.userType == "User":
             room_status = RoomStatus.query.filter_by(id = room_status_id).first()
             if room_status == None:
                 raise NotFoundError("room status not found")
@@ -209,8 +216,9 @@ class AllRoomStatusByID(Resource):
             raise UnauthorizedError()
 
     @token_required
-    def delete(current_user, self, room_status_id):
-        if current_user['userType'] == "Admin":
+    def delete(self, room_status_id):
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             room_status = RoomStatus.query.filter_by(id = room_status_id)
             if room_status.count() == 0:
                 raise NotFoundError("room device not found")
@@ -225,9 +233,10 @@ class AllRoomStatusByID(Resource):
 
 class Room_control_real_time_data(Resource):  # CHECK IF USER HAS REAL TIME IN ROOM CONTROL
     @token_required
-    def get(current_user, self):
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
-            user = UsersLogs.query.filter_by(username = current_user['username'])
+    def get(self):
+        current_user = g.current_user
+        if current_user.userType == "Admin" or current_user.userType == "User":
+            user = UsersLogs.query.filter_by(username = current_user.username)
             if user.count() == 0 or user.count() > 1:
                 UnauthorizedError("user is not currently login")
             if user.first().room_control_real_time_data:

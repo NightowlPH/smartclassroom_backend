@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, request,render_template,flash
+from flask import Flask, redirect, url_for, request,render_template,flash, g
 from ..exceptions import UnauthorizedError, UnexpectedError
 from flask import Blueprint
 from nightowl.app import db
@@ -16,8 +16,9 @@ from nightowl.app import app
 
 class permissions(Resource):
     @token_required
-    def get(current_user, self):
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
+    def get(self):
+        current_user = g.current_user
+        if current_user.userType == "Admin" or current_user.userType == "User":
             allPermission = []
             permission_schema = PermissionSchema(only = ('id', 'name', 'description'))
             permission = Permission.query.all()
@@ -28,8 +29,9 @@ class permissions(Resource):
             raise UnauthorizedError()
 
     @token_required
-    def post(current_user, self):
-        if current_user['userType'] == "Admin":
+    def post(self):
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             permissions_schema = PermissionSchema()
 
             Request = request.get_json()
@@ -44,8 +46,9 @@ class permissions(Resource):
 
 class permission(Resource):
     @token_required
-    def delete(current_user, self, id):
-        if current_user['userType'] == "Admin":
+    def delete(self, id):
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             if GroupAccess.query.filter_by(permission_id = id).count() != 0:
                 GroupAccess.query.filter_by(user_id = id).delete()
             Permission.query.filter_by(id = id).delete()
@@ -55,8 +58,9 @@ class permission(Resource):
             raise UnauthorizedError()
 
     @token_required
-    def get(current_user, self, id):
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
+    def get(self, id):
+        current_user = g.current_user
+        if current_user.userType == "Admin" or current_user.userType == "User":
             permission_schema = PermissionSchema(only = ('name', 'description'))
             query = Permission.query.filter_by(id = id)
 
@@ -69,8 +73,9 @@ class permission(Resource):
             raise UnauthorizedError()
 
     @token_required
-    def put(current_user, self, id):
-        if current_user['userType'] == "Admin":
+    def put(self, id):
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             request_data = request.get_json()
 
             query = Permission.query.filter_by(name = request_data['name'])
@@ -87,32 +92,12 @@ class permission(Resource):
 
 
 class getAllPer(Resource):
+    @token_required
     def get(self):
-        token = None
-        if 'x-access-token' in request.headers:
-            token = request.headers['x-access-token']
-
-        if not token:
-            return jsonify({'message' : 'token is missing'})
-
-        try:
-            data = jwt.decode(token, app.config['SECRET_KEY'])
-            active_user = UsersLogs.query.filter_by(public_id = data['public_id'], username = data['username']).first()
-            print(active_user)
-            user = Users.query.filter_by(username = active_user.username)
-            if user.first() == None:
-                raise UnauthorizedError()
-            if user.count() == 1:
-                allPermission = []
-                permission_schema = PermissionSchema(only = ('id', 'name', 'description'))
-                permission = Permission.query.all()
-                for queried_permission in permission:
-                    allPermission.append(permission_schema.dump(queried_permission).data)
-                return {"permissions": allPermission}
-        except Exception as error:
-            error = str(error)
-            print(error)
-            if error == "Signature has expired":
-                raise UnexpectedError({"message": "your token has been expired"})
-            else:
-                return 500
+        current_user = g.current_user
+        allPermission = []
+        permission_schema = PermissionSchema(only = ('id', 'name', 'description'))
+        permission = Permission.query.all()
+        for queried_permission in permission:
+            allPermission.append(permission_schema.dump(queried_permission).data)
+        return {"permissions": allPermission}

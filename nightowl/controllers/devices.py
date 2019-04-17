@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, request,render_template,flash
+from flask import Flask, redirect, url_for, request,render_template,flash, g
 from ..exceptions import UnauthorizedError, UnexpectedError
 from flask import Blueprint
 from nightowl.app import db
@@ -14,8 +14,9 @@ from nightowl.schema.devices import devices_schema
 
 class devices(Resource):
     @token_required
-    def get(current_user, self):
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
+    def get(self):
+        current_user = g.current_user
+        if current_user.userType == "Admin" or current_user.userType == "User":
             all_devices = []
             devices = Devices.query.all()
             for device in devices:
@@ -31,8 +32,9 @@ class devices(Resource):
             raise UnauthorizedError()
 
     @token_required
-    def post(current_user, self):
-        if current_user['userType'] == "Admin":
+    def post(self):
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             Request = request.get_json()
             if Devices.query.filter_by(name = Request['name']).count() != 0:
                 return {"message": "already exist"}
@@ -46,8 +48,9 @@ class devices(Resource):
 
 class device(Resource):
     @token_required
-    def delete(current_user, self, id):
-        if current_user['userType'] == "Admin":
+    def delete(self, id):
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             if RoomStatus.query.filter_by(device_id = id).count() != 0:
                 return {"message": "please remove devices from room before you delete device"}
             Devices.query.filter_by(id = id).delete()
@@ -58,8 +61,9 @@ class device(Resource):
 
 
     @token_required
-    def get(current_user, self, id):
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
+    def get(self, id):
+        current_user = g.current_user
+        if current_user.userType == "Admin" or current_user.userType == "User":
             query = Devices.query.filter_by(id = id)
 
             if query.count() != 0:
@@ -72,8 +76,9 @@ class device(Resource):
             raise UnauthorizedError()
 
     @token_required
-    def put(current_user, self, id):
-        if current_user['userType'] == "Admin":
+    def put(self, id):
+        current_user = g.current_user
+        if current_user.userType == "Admin":
             request_data = request.get_json()
             print(request_data)
 
