@@ -1,7 +1,9 @@
 from nightowl.app import db
 from sqlalchemy import ForeignKey
 from nightowl.models.groupMember import GroupMember
+from nightowl.models.room import Room
 import logging
+from itertools import chain
 
 log = logging.getLogger(__name__)
 
@@ -35,6 +37,27 @@ class Users(db.Model):
         [perms.update(m.group.allPermissions) for m in self.group_member]
         return perms
 
+    def _roomPermissions(self):
+        perms = {}
+        for m in self.group_member:
+            for a in m.group.group_access:
+                if a.room is not None:
+                   perms.setdefault(a.permission.name, []).append(a.room)
+        return perms
+
+    def getAccessibleRooms(self, permissions):
+        if set(permissions) & self.globalPermissions:
+            log.debug("{} globally allowed".format(permissions))
+            rooms = Room.query.all()
+        else:
+            room_perms =  dict([(k, v) for k,v in self.roomPermissions.items()
+                                if k in permissions])
+            log.debug("Room permissions: {}".format(room_perms))
+            rooms = set(chain(*room_perms.values()))
+        return rooms
+
+
+
     def getRoomPermission(self, room):
         perms = set()
         [perms.update(m.group.getRoomPermission(room))
@@ -43,6 +66,7 @@ class Users(db.Model):
 
     globalPermissions = property(_globalPermissions)
     allPermissions = property(_allPermissions)
+    roomPermissions = property(_roomPermissions)
 
     def _userType(self):
         perms = self.allPermissions

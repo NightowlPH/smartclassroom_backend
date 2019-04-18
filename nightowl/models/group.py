@@ -47,11 +47,13 @@ class Group(db.Model):
         return set([a.permission.name for a in self.group_access])
 
     def getRoomPermission(self, room):
-        return set([a.permission.name for a in self.group_access
-                    if a.room == room])
+        perms = set([a.permission.name for a in self.group_access
+                     if a.room == room])
+        perms.update(self.globalPermissions)
+        return perms
 
     def _permission_id(self):
-        return self.permission.permission_id
+        return self.permission.id
 
     def _set_permission_id(self, permission_id):
         self.permission = Permission.query.get(permission_id)

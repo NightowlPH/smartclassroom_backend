@@ -1,8 +1,8 @@
 from flask import Flask, redirect, url_for, request,render_template,flash, g
-from ..exceptions import UnauthorizedError, UnexpectedError
+from ..exceptions import UnauthorizedError, UnexpectedError, InvalidDataError
 from flask import Blueprint
 from nightowl.app import db
-from ..auth.authentication import token_required
+from ..auth.authentication import requires
 from flask_restful import Resource
 
 from nightowl.models.devices import Devices
@@ -13,83 +13,63 @@ from nightowl.schema.devices import devices_schema
 
 
 class devices(Resource):
-    @token_required
+    @requires("any", ["User", "Admin"])
     def get(self):
-        current_user = g.current_user
-        if current_user.userType == "Admin" or current_user.userType == "User":
-            all_devices = []
-            devices = Devices.query.all()
-            for device in devices:
-                data = devices_schema.dump(device).data
-                remote_design = RemoteDesign.query.filter_by(id = device.remote_design_id).first()
-                if remote_design == None:
-                    data['remote_design'] = None
-                else:
-                    data['remote_design'] = remote_design.name
-                all_devices.append(data)
-            return {'devices': all_devices}
-        else:
-            raise UnauthorizedError()
+        all_devices = []
+        devices = Devices.query.all()
+        for device in devices:
+            data = devices_schema.dump(device).data
+            remote_design = RemoteDesign.query.filter_by(id = device.remote_design_id).first()
+            if remote_design == None:
+                data['remote_design'] = None
+            else:
+                data['remote_design'] = remote_design.name
+            all_devices.append(data)
+        return {'devices': all_devices}
 
-    @token_required
+    @requires("global", ["Admin"])
     def post(self):
-        current_user = g.current_user
-        if current_user.userType == "Admin":
-            Request = request.get_json()
-            if Devices.query.filter_by(name = Request['name']).count() != 0:
-                return {"message": "already exist"}
-            addDevice = Devices(name = Request['name'],description = Request['description'])
-            addDevice.remote_design = RemoteDesign.query.filter_by(id = Request['remote_design_id']).first()
-            db.session.add(addDevice)
-            db.session.commit()
-        else:
-            raise UnauthorizedError()
+        Request = request.get_json()
+        if Devices.query.filter_by(name = Request['name']).count() != 0:
+            raise InvalidDataError("Device {} already exist".format(Request['name']))
+        addDevice = Devices(name = Request['name'],description = Request['description'])
+        addDevice.remote_design = RemoteDesign.query.filter_by(id = Request['remote_design_id']).first()
+        db.session.add(addDevice)
+        db.session.commit()
 
 
 class device(Resource):
-    @token_required
+    @requires("global", ["Admin"])
     def delete(self, id):
-        current_user = g.current_user
-        if current_user.userType == "Admin":
-            if RoomStatus.query.filter_by(device_id = id).count() != 0:
-                return {"message": "please remove devices from room before you delete device"}
-            Devices.query.filter_by(id = id).delete()
-            db.session.commit()
-            return {"response":'device successfully deleted'}
-        else:
-            raise UnauthorizedError()
+        if RoomStatus.query.filter_by(device_id = id).count() != 0:
+            return {"message": "please remove devices from room before you delete device"}
+        Devices.query.filter_by(id = id).delete()
+        db.session.commit()
+        return {"response":'device successfully deleted'}
 
 
-    @token_required
+    @requires("any", ["User", "Admin"])
     def get(self, id):
-        current_user = g.current_user
-        if current_user.userType == "Admin" or current_user.userType == "User":
-            query = Devices.query.filter_by(id = id)
+        query = Devices.query.get(id)
 
-            if query.count() != 0:
-                device = devices_schema.dump(query.first()).data
-                device['remote_design'] = RemoteDesign.query.filter_by(id = device['remote_design_id']).first().name
-                return {"data": device}
-            else:
-                return {"data": []}
+        if query.count() != 0:
+            device = devices_schema.dump(query.first()).data
+            device['remote_design'] = RemoteDesign.query.filter_by(id = device['remote_design_id']).first().name
+            return {"data": device}
         else:
-            raise UnauthorizedError()
+            return {"data": []}
 
-    @token_required
+    @requires("global", ["Admin"])
     def put(self, id):
-        current_user = g.current_user
-        if current_user.userType == "Admin":
-            request_data = request.get_json()
-            print(request_data)
+        request_data = request.get_json()
+        print(request_data)
 
-            query = Devices.query.filter_by(name = request_data['name'])
-            if query.count() > 0 and int(id) != query.first().id:
-                return{"message": "device already exist"}
-            else:
-                query = Devices.query.filter_by(id = id).one()
-                query.name = request_data['name']
-                query.description = request_data['description']
-                query.remote_design_id = RemoteDesign.query.filter_by(id = request_data['remote_design_id']).first().id
-                db.session.commit()
+        query = Devices.query.filter_by(name = request_data['name'])
+        if query.count() > 0 and int(id) != query.first().id:
+            return{"message": "device already exist"}
         else:
-            raise UnauthorizedError()
+            query = Devices.query.filter_by(id = id).one()
+            query.name = request_data['name']
+            query.description = request_data['description']
+            query.remote_design_id = RemoteDesign.query.filter_by(id = request_data['remote_design_id']).first().id
+            db.session.commit()
