@@ -87,7 +87,7 @@ class user(Resource):
         query = Users.query.get(id)
         if query is None:
             raise NotFoundError("User {} was not found".format(id))
-        user = users_schema.dump(query.first()).data
+        user = users_schema.dump(query).data
         return {"data": user}
 
     @requires("global", ["Admin"])

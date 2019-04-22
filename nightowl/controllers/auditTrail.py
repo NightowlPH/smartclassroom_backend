@@ -14,10 +14,11 @@ class auditTrail(Resource):
     @requires("any", ["Admin", "User"])
     def get(self):
         current_user = g.current_user
-        trail = [at for room in current_user.getAcessibleRoom(['User', 'Admin'])
-                 for at in room.audit_trail]
+        trail = sorted([
+            at for room in current_user.getAccessibleRooms(['User', 'Admin'])
+            for at in room.audit_trail],
+                       key=lambda x: at.timestamp)
         all_data = []
-        query = AuditTrail.query.all()
         for tr in trail:
             auditTrail = {}
             user = tr.user

@@ -21,21 +21,22 @@ log = logging.getLogger(__name__)
 class roomStatus(Resource): # for angular frontend app
     @requires("any", ["Admin", "User"])
     def get(self):
-        rooms = g.current_user.getAccessibleRooms(["User", "Admin"])
+        rooms = sorted(g.current_user.getAccessibleRooms(["User", "Admin"]),
+                       key=lambda x: x.name)
         all_data = {"room_status": []}
 
         totalDevice = Devices.query.count()
 
         for room in rooms:
             data = {"room_id": room.id,"room_name": room.name, "devices": []}
-            room_device = RoomStatus.query.filter_by(room_id = room.id)
+            statuses = sorted(room.room_status, key=lambda x: x.device.name)
             add_device = True
-            if room_device.count() == totalDevice \
+            if len(statuses) == totalDevice \
                     or "Admin" not in g.current_user.getRoomPermission(room):
                 add_device = False
             data['add_device'] = add_device
-            for queried_room_device in room_device.all():
-                device = Devices.query.filter_by(id = queried_room_device.device_id).first()
+            for queried_room_device in statuses:
+                device = queried_room_device.device
                 remote_design = RemoteDesign.query.filter_by(id = device.remote_design_id).first()
                 class_name = ""
                 if remote_design.name == "Switch2":
@@ -61,14 +62,16 @@ class AllRoomStatus(Resource): # for mobile and other app
     @requires("any", ["Admin", "User"])
     def get(self):
         current_user = g.current_user
-        rooms = current_user.getAccessibleRooms(["User", "Admin"])
+        rooms = sorted(current_user.getAccessibleRooms(["User", "Admin"]),
+                       key=lambda x: x.name)
 
         all_data = {"room_status": []}
         totalDevice = Devices.query.count()
 
         for room in rooms:
             data = {"room_id": room.id,"room_name": room.name.upper(), "devices": []}
-            for rs in room.room_status:
+            statuses = sorted(room.room_status, key=lambda x: x.device.name)
+            for rs in statuses:
                 if rs.device.name == 'Door':
                     # Ignore Door Device
                     continue

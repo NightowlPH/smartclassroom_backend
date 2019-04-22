@@ -56,8 +56,6 @@ class Users(db.Model):
             rooms = set(chain(*room_perms.values()))
         return rooms
 
-
-
     def getRoomPermission(self, room):
         perms = set()
         [perms.update(m.group.getRoomPermission(room))
