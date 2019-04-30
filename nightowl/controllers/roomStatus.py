@@ -1,9 +1,9 @@
-from flask import Flask, redirect, url_for, request,render_template,flash
+from flask import Flask, redirect, url_for, request,render_template, flash, g
 from ..exceptions import (UnauthorizedError, UnexpectedError, NotFoundError,
                           InvalidDataError)
 from flask import Blueprint
 from nightowl.app import db
-from ..auth.authentication import token_required
+from ..auth.authentication import requires
 from flask_restful import Resource
 from datetime import datetime
 from mqtt import mqtt
@@ -19,225 +19,208 @@ from nightowl.models.usersLogs import UsersLogs
 log = logging.getLogger(__name__)
 
 class roomStatus(Resource): # for angular frontend app
-    @token_required
-    def get(current_user, self):
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
-            all_data = {"room_status": []}
+    @requires("any", ["Admin", "User"])
+    def get(self):
+        rooms = sorted(g.current_user.getAccessibleRooms(["User", "Admin"]),
+                       key=lambda x: x.name)
+        all_data = {"room_status": []}
 
-            rooms = Room.query.all()
-            totalDevice = Devices.query.count()
+        totalDevice = Devices.query.count()
 
-            for room in rooms:
-                data = {"room_id": room.id,"room_name": room.name, "devices": []}
-                room_device = RoomStatus.query.filter_by(room_id = room.id)
-                add_device = True
-                if room_device.count() == totalDevice:
-                    add_device = False
-                data['add_device'] = add_device
-                for queried_room_device in room_device.all():
-                    device = Devices.query.filter_by(id = queried_room_device.device_id).first()
-                    remote_design = RemoteDesign.query.filter_by(id = device.remote_design_id).first()
-                    class_name = ""
-                    if remote_design.name == "Switch2":
-                        class_name = "Door"
-                    device_details = {
-                            "device_id": queried_room_device.device_id,
-                            "device_name": device.name,
-                            "device_status": queried_room_device.status,
-                            "room_status_id": queried_room_device.id,
-                            "remote_design": remote_design.name,
-                            "remote_design_id": remote_design.id,
-                            "class_name": class_name
-                        }
-                    if remote_design.name == "Temperature Slider":
-                        tem_details = json.loads(remote_design.data)
-                        device_details.update(tem_details)
-                    data['devices'].append(device_details)
-                all_data["room_status"].append(data)
-            return all_data
-        else:
-            raise UnauthorizedError()
-
+        for room in rooms:
+            data = {"room_id": room.id,"room_name": room.name, "devices": []}
+            statuses = sorted(room.room_status, key=lambda x: x.device.name)
+            add_device = True
+            if len(statuses) == totalDevice \
+                    or "Admin" not in g.current_user.getRoomPermission(room):
+                add_device = False
+            data['add_device'] = add_device
+            for queried_room_device in statuses:
+                device = queried_room_device.device
+                remote_design = RemoteDesign.query.filter_by(id = device.remote_design_id).first()
+                class_name = ""
+                if remote_design.name == "Switch2":
+                    class_name = "Door"
+                device_details = {
+                        "device_id": queried_room_device.device_id,
+                        "device_name": device.name,
+                        "device_status": queried_room_device.status,
+                        "room_status_id": queried_room_device.id,
+                        "remote_design": remote_design.name,
+                        "remote_design_id": remote_design.id,
+                        "class_name": class_name
+                    }
+                if remote_design.name == "Temperature Slider":
+                    tem_details = json.loads(remote_design.data)
+                    device_details.update(tem_details)
+                data['devices'].append(device_details)
+            all_data["room_status"].append(data)
+        return all_data
 
 
 class AllRoomStatus(Resource): # for mobile and other app
-    @token_required
-    def get(current_user, self):
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
-            all_data = {"room_status": []}
+    @requires("any", ["Admin", "User"])
+    def get(self):
+        current_user = g.current_user
+        rooms = sorted(current_user.getAccessibleRooms(["User", "Admin"]),
+                       key=lambda x: x.name)
 
-            rooms = Room.query.all()
-            totalDevice = Devices.query.count()
+        all_data = {"room_status": []}
+        totalDevice = Devices.query.count()
 
-            for room in rooms:
-                data = {"room_id": room.id,"room_name": room.name.upper(), "devices": []}
-                query = Devices.query.filter_by(name = "Door").first()
-                room_device = RoomStatus.query.filter(RoomStatus.room_id == room.id, RoomStatus.device_id != query.id) # Ignore Door Device
-                for queried_room_device in room_device.all():
-                    device = Devices.query.filter_by(id = queried_room_device.device_id).first()
-                    device_name = device.name
-                    device_status = queried_room_device.status
-                    if device.name == "Aircon temperature":
-                        device_name = "Temp."
-                    if queried_room_device.status == "true":
-                        device_status = "on"
-                    elif queried_room_device.status == "false":
-                        device_status = "off"
-                    device_details = {
-                            "device_name": device_name,
-                            "device_status": device_status,
-                        }
-                    data['devices'].append(device_details)
-                all_data["room_status"].append(data)
-            return all_data
-        else:
-            raise UnauthorizedError()
+        for room in rooms:
+            data = {"room_id": room.id,"room_name": room.name.upper(), "devices": []}
+            statuses = sorted(room.room_status, key=lambda x: x.device.name)
+            for rs in statuses:
+                if rs.device.name == 'Door':
+                    # Ignore Door Device
+                    continue
+                device = rs.device
+                device_name = device.name
+                device_status = rs.status
+                if device.name == "Aircon temperature":
+                    device_name = "Temp."
+                if rs.status == "true":
+                    device_status = "on"
+                elif rs.status == "false":
+                    device_status = "off"
+                device_details = {
+                        "device_name": device_name,
+                        "device_status": device_status,
+                    }
+                data['devices'].append(device_details)
+            all_data["room_status"].append(data)
+        return all_data
+
 
 class RoomStatusByRoomID(Resource):
-    @token_required
-    def get(current_user, self, id):
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
+    @requires("room", ["Admin", "User"])
+    def get(self, id):
+        current_user = g.current_user
+        room = Room.query.get(id)
+        if room is None:
+            raise NotFoundError("room not found")
+        data = {"room_id": room.id,"room_name": room.name, "date": datetime.strftime(datetime.today(),'%B %d %Y %A') , "devices": []}
 
-            room = Room.query.filter_by(id = id).first()
-            data = {"room_id": room.id,"room_name": room.name, "date": datetime.strftime(datetime.today(),'%B %d %Y %A') , "devices": []}
-
-            if room == None:
-                raise NotFoundError("room not found")
-            devices = RoomStatus.query.filter_by(room_id = room.id).all()
-            for device in devices:
-                queried_deivce = Devices.query.filter_by(id = device.device_id).first()
-                device_details = {
-                        "room_status_id": device.id,
-                        "device_name": queried_deivce.name,
-                        "device_status": device.status,
-                    }
-                if queried_deivce.name == "Aircon temperature":
-                    if len(data['devices']) != 0:
-                        data['devices'].insert(0,device_details)
-                    else:
-                        data['devices'].append(device_details)
+        for rs in room.room_status:
+            queried_device = rs.device
+            device_details = {
+                    "room_status_id": rs.id,
+                    "device_name": queried_device.name,
+                    "device_status": rs.status,
+                }
+            if queried_device.name == "Aircon temperature":
+                if len(data['devices']) != 0:
+                    data['devices'].insert(0,device_details)
                 else:
                     data['devices'].append(device_details)
-            return data
-        else:
-            raise UnauthorizedError()
+            else:
+                data['devices'].append(device_details)
+        return data
+
 
 class RoomStatusByID(Resource): # for mobile and other app
-    @token_required
-    def get(current_user, self, room_status_id):
-        if current_user['userType'] == "Admin":
-            room_status = RoomStatus.query.filter_by(id = room_status_id).first()
-            if room_status == None:
-                raise NotFoundError("room status not found")
-            return {"id": room_status.id, "status": room_status.status}
-        else:
-            raise UnauthorizedError()
+    @requires("roomstatus", ["Admin"])
+    def get(self, id):
+        rs = RoomStatus.query.get(room_status_id)
+        if rs is None:
+            raise NotFoundError("room status not found")
+        return {"id": rs.id, "status": rs.status}
 
 
 class GetDeviceToAdd(Resource):
-    @token_required
-    def get(current_user, self, room_id): # get all device not is not added to the room
-        if current_user['userType'] == "Admin":
-            data = {"devices": []}
+    @requires("room", ["Admin"])
+    def get(self, id): # get all device not is not added to the room
+        current_user = g.current_user
+        room = Room.query.get(id)
+        if room is None:
+            raise NotFoundError("room not found")
+        data = {"devices": []}
 
-            devices = Devices.query.all()
-            for device in devices:
-                query = RoomStatus.query.filter_by(room_id = room_id, device_id = device.id).count()
-                if query == 0:
-                    data['devices'].append({
-                            "id": device.id,
-                            "name": device.name,
-                            "description": device.description
-                        })
-            return data
-        else:
-            raise UnauthorizedError()
+        room_devices = [rs.device for rs in room.room_status]
+        devices = [d for d in Devices.query.all() if d not in room_devices]
+        for device in devices:
+            data['devices'].append({
+                "id": device.id,
+                "name": device.name,
+                "description": device.description
+            })
+        return data
+
 
 class AddDeviceToRoom(Resource):
-    @token_required
-    def post(current_user, self, room_id):
-        if current_user['userType'] == "Admin":
-            room = Room.query.filter_by(id = room_id).first()
-            data = request.get_json()
+    @requires("room", ["Admin"])
+    def post(self, id):
+        room = Room.query.get(id)
+        if room is None:
+            raise NotFoundError("room not found")
+        data = request.get_json()
 
-            if room == None:
-                    raise NotFoundError("room not found")
-            for device_id in data:
-                device = Devices.query.filter_by(id = device_id).first()
-                remoteDesign = RemoteDesign.query.filter_by(id = device.remote_design_id).first()
-                if device == None:
-                    raise NotFoundError("device not found")
-                if remoteDesign.name == "Temperature Slider":
-                    status = 24
-                else:
-                    status = 'false'
-                addDevice = RoomStatus(status = status, timestamp = datetime.today())
-                addDevice.device = device
-                addDevice.room = room
-                db.session.add(addDevice)
-                db.session.commit()
-                room_status = RoomStatus.query.all()
-                # print(">>>>==================================",room_status,len(room_status))
-            mqtt.publish("smartclassroom/reloadMqtt","true")
-                # print("ADD-->")
-        else:
-            raise UnauthorizedError()
+        for device_id in data:
+            device = Devices.query.filter_by(id = device_id).first()
+            remoteDesign = RemoteDesign.query.filter_by(id = device.remote_design_id).first()
+            if device == None:
+                raise NotFoundError("device not found")
+            if remoteDesign.name == "Temperature Slider":
+                status = 24
+            else:
+                status = 'false'
+            addDevice = RoomStatus(status = status, timestamp = datetime.today())
+            addDevice.device = device
+            addDevice.room = room
+            db.session.add(addDevice)
+            db.session.commit()
+            room_status = RoomStatus.query.all()
+            # print(">>>>==================================",room_status,len(room_status))
+            # print("ADD-->")
+        mqtt.publish("smartclassroom/reloadMqtt","true")
 
 class AllRoomStatusByID(Resource):
-    @token_required
-    def put(current_user, self, room_status_id): #CONTROL DEVICES
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
-            room_status = RoomStatus.query.filter_by(id = room_status_id).first()
-            if room_status == None:
-                raise NotFoundError("room status not found")
+    @requires("roomstatus", ["Admin", "User"])
+    def put(self, id): #CONTROL DEVICES
+        current_user = g.current_user
+        room_status = RoomStatus.query.get(id)
+        if room_status == None:
+            raise NotFoundError("room status not found")
 
-            payload = request.get_json()['value']
-            log.debug("Received payload: {}".format(payload))
-            print(type(payload),payload)
-            if payload == True:
-                payload = "true"
-            elif payload == False:
-                payload = "false"
-            elif isinstance(payload, int) and payload>=16 and payload<=26:
-                payload = int(payload)
-            else:
-                raise InvalidDataError("Invalid payload")
-            data = get_room_status_details(room_status)
-            print("-----publish----")
-            mqtt.publish("smartclassroom/"+str(data['room_name'])+"/"+str(data['device_name'])+"/"+str(data['ext_topic']),payload)
+        payload = request.get_json()['value']
+        log.debug("Received payload: {}".format(payload))
+        if payload == True:
+            payload = "true"
+        elif payload == False:
+            payload = "false"
+        elif isinstance(payload, int) and payload>=16 and payload<=26:
+            payload = int(payload)
         else:
-            raise UnauthorizedError()
+            raise InvalidDataError("Invalid payload")
+        data = get_room_status_details(room_status)
+        log.debug("-----publish----")
+        mqtt.publish("smartclassroom/"+str(data['room_name'])+"/"+str(data['device_name'])+"/"+str(data['ext_topic']),payload)
 
-    @token_required
-    def delete(current_user, self, room_status_id):
-        if current_user['userType'] == "Admin":
-            room_status = RoomStatus.query.filter_by(id = room_status_id)
-            if room_status.count() == 0:
-                raise NotFoundError("room device not found")
-
-            data = get_room_status_details(room_status.first())
-            room_status.delete()
-            db.session.commit()
-            mqtt.publish("smartclassroom/reloadMqtt","true")
-            print("delete-->")
-        else:
-            raise UnauthorizedError()
+    @requires("roomstatus", ["Admin"])
+    def delete(self, id):
+        room_status = RoomStatus.query.get(id)
+        if room_status == None:
+            raise NotFoundError("room status not found")
+        data = get_room_status_details(room_status)
+        db.session.delete(room_status)
+        db.session.commit()
+        mqtt.publish("smartclassroom/reloadMqtt","true")
+        log.debug("delete-->")
 
 class Room_control_real_time_data(Resource):  # CHECK IF USER HAS REAL TIME IN ROOM CONTROL
-    @token_required
-    def get(current_user, self):
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
-            user = UsersLogs.query.filter_by(username = current_user['username'])
-            if user.count() == 0 or user.count() > 1:
-                UnauthorizedError("user is not currently login")
-            if user.first().room_control_real_time_data:
-                return {"room_control_updated": True}
-            if not user.first().room_control_real_time_data:
-                user.one().room_control_real_time_data = True
-                db.session.commit()
-                return {"room_control_updated": False}
-        else:
-            raise UnauthorizedError()
+    @requires("any", ["User", "Admin"])
+    def get(self):
+        current_user = g.current_user
+        user = UsersLogs.query.filter_by(username = current_user.username)
+        if user.count() == 0 or user.count() > 1:
+            UnauthorizedError("user is not currently login")
+        if user.first().room_control_real_time_data:
+            return {"room_control_updated": True}
+        if not user.first().room_control_real_time_data:
+            user.one().room_control_real_time_data = True
+            db.session.commit()
+            return {"room_control_updated": False}
 
 
 def get_room_status_details(room_status):

@@ -1,6 +1,7 @@
 from nightowl.app import db
 from sqlalchemy import ForeignKey
 from nightowl.models.room import Room
+from nightowl.models.devices import Devices
 
 class RoomStatus(db.Model):
   __tablename__ = "room_status"
