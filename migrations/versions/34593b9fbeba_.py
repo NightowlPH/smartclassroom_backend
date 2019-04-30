@@ -7,6 +7,7 @@ Create Date: 2019-04-16 17:22:05.477065
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.exc import InternalError
 
 
 # revision identifiers, used by Alembic.
@@ -33,7 +34,15 @@ def upgrade():
         vals.append({'group_id': row[0], 'permission_id':row[1]})
     conn.execute(access.insert(), vals)
 
-    op.drop_constraint('group_permission_id_fkey', 'group', type_='foreignkey')
+    try:
+        op.drop_constraint('group_permission_id_fkey', 'group',
+                           type_='foreignkey')
+    except InternalError:
+        cons_name = conn.execute("SELECT CONSTRAINT_NAME FROM "
+                                 "INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE "
+                                 "REFERENCED_TABLE_NAME='permission' AND "
+                                 "TABLE_NAME='group'").fetchone()[0]
+        op.drop_constraint(cons_name, 'group', type_='foreignkey')
     op.drop_column('group', 'permission_id')
     # ### end Alembic commands ###
 
