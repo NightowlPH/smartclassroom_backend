@@ -44,7 +44,7 @@ class login(Resource):
                     return {"message": "user already logged out"}
                 token = jwt.encode({'username': data['username'], 'public_id' : public_id, 'exp': datetime_now + timedelta(days = 1)}, app.config['SECRET_KEY'])
                 token = token.decode('UTF-8')
-                userType = user.userType(userirst().id)
+                userType = user.userType
                 return {"token": token, 'userType': userType}
             except Exception as error:
                 error = str(error)

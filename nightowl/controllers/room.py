@@ -2,7 +2,7 @@ from flask import Flask, redirect, url_for, request,render_template,flash, g
 from ..exceptions import UnauthorizedError, UnexpectedError, InvalidDataError
 from flask import Blueprint
 from nightowl.app import db
-from ..auth.authentication import token_required, requires
+from ..auth.authentication import requires
 from flask_restful import Resource
 
 from nightowl.schema.room import RoomSchema
