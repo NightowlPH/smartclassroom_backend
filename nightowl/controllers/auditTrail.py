@@ -17,7 +17,7 @@ class auditTrail(Resource):
         trail = sorted([
             at for room in current_user.getAccessibleRooms(['User', 'Admin'])
             for at in room.audit_trail],
-                       key=lambda x: at.timestamp)
+                       key=lambda x: x.timestamp)
         all_data = []
         for tr in trail:
             auditTrail = {}
