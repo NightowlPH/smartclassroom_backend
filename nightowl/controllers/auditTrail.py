@@ -38,10 +38,10 @@ class auditTrail(Resource):
                 auditTrail['permission'] = permission.name
             else:
                 auditTrail['permission'] = None
-            auditTrail['timestamp'] = datetime.strftime(queried_auditTrail.timestamp,'%Y-%m-%d %I:%M %p')
-            auditTrail['cardID'] = queried_auditTrail.cardID
-            auditTrail['action'] = queried_auditTrail.action
-            auditTrail['id'] = queried_auditTrail.id
+            auditTrail['timestamp'] = datetime.strftime(tr.timestamp,'%Y-%m-%d %I:%M %p')
+            auditTrail['cardID'] = tr.cardID
+            auditTrail['action'] = tr.action
+            auditTrail['id'] = tr.id
             all_data.append(auditTrail)
             return {"auditTrail": all_data}
 
