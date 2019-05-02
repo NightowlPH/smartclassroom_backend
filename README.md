@@ -18,7 +18,7 @@ For more information see See https://wiki.foundationu.com/nightowl/smart-classro
 * copy config.py to it
 * add a setting to config.py `SQLALCHEMY_DATABASE_URI = "mysql+pymysql://<user>:<password>@localhost/smartclassroom"`
 * run `flask db upgrade` to update your database
-* If this is the first time, you can load a basic database with `python run.py insert_test_data`
+* If this is the first time, you can load a basic database with `python load_data.py`
 
 ## More info
 
