@@ -16,7 +16,7 @@ For more information see See https://wiki.foundationu.com/nightowl/smart-classro
 * create a user and password in mysql and a database "smartclassroom" owned by that user
 * make a directory "instance" inside the smartclassroom_backend folder
 * copy config.py to it
-* add a setting to config.py `SQLALCHEMY_URI = "mysql://<user>:<password>@localhost/smartclassroom"
+* add a setting to config.py `SQLALCHEMY_URI = "mysql://<user>:<password>@localhost/smartclassroom"`
 * run `flask db migrate` to update your database
 * If this is the first time, you can load a basic database with `python run.py insert_test_data`
 
