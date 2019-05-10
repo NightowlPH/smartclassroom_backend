@@ -37,7 +37,7 @@ class permissions(Resource):
             db.session.commit()
         else:
             raise InvalidDataError(
-                {"message": "Permission {} already exist".format(name)}
+                "Permission {} already exist".format(name)
             )
 
 class permission(Resource):

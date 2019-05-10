@@ -37,7 +37,7 @@ class rooms(Resource):
             db.session.commit()
         else:
             raise InvalidDataError(
-                {"message": "Room {} already exist".format(name)}
+                "Room {} already exist".format(name)
             )
 
 class room(Resource):
