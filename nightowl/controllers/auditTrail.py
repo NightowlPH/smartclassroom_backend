@@ -9,6 +9,9 @@ from nightowl.models.users import Users
 from nightowl.models.room import Room
 from nightowl.models.permission import Permission
 from nightowl.models.auditTrail import AuditTrail
+import logging
+
+log = logging.getLogger(__name__)
 
 class auditTrail(Resource):
     @requires("any", ["Admin", "User"])
@@ -17,7 +20,7 @@ class auditTrail(Resource):
         trail = sorted([
             at for room in current_user.getAccessibleRooms(['User', 'Admin'])
             for at in room.audit_trail],
-                       key=lambda x: at.timestamp)
+                       key=lambda x: x.timestamp)
         all_data = []
         for tr in trail:
             auditTrail = {}
@@ -38,12 +41,12 @@ class auditTrail(Resource):
                 auditTrail['permission'] = permission.name
             else:
                 auditTrail['permission'] = None
-            auditTrail['timestamp'] = datetime.strftime(queried_auditTrail.timestamp,'%Y-%m-%d %I:%M %p')
-            auditTrail['cardID'] = queried_auditTrail.cardID
-            auditTrail['action'] = queried_auditTrail.action
-            auditTrail['id'] = queried_auditTrail.id
+            auditTrail['timestamp'] = datetime.strftime(tr.timestamp,'%Y-%m-%d %I:%M %p')
+            auditTrail['cardID'] = tr.cardID
+            auditTrail['action'] = tr.action
+            auditTrail['id'] = tr.id
             all_data.append(auditTrail)
-            return {"auditTrail": all_data}
+        return {"auditTrail": all_data}
 
 class deleteAuditTrail(Resource):
     @requires("global", ['Admin'])

@@ -5,6 +5,7 @@ from ..auth.authentication import requires
 from flask_restful import Resource
 from datetime import datetime
 import logging
+from sqlalchemy import and_
 
 from ..models.group import Group
 from nightowl.models.groupAccess import GroupAccess
@@ -72,8 +73,10 @@ class group(Resource):
     def put(self, id):
         request_data = request.get_json()
         log.debug("Request data: {}".format(request_data))
-        query = Group.query.filter_by(name = request_data['name'])
-        if query.count() > 0 and int(id) != query.first().id:
+        duplicate_groups = Group.query.filter(
+            and_(Group.name == request_data['name'],
+                 Group.id != id))
+        if duplicate_groups.count() > 0:
             raise InvalidDataError("group already exist")
 
         if 'permission_id' in request_data.keys() and \

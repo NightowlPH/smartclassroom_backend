@@ -9,6 +9,7 @@ from nightowl.schema.room import RoomSchema
 from nightowl.models.room import Room
 from nightowl.models.groupAccess import GroupAccess
 from nightowl.models.roomStatus import RoomStatus
+from sqlalchemy import and_
 import logging
 
 log = logging.getLogger(__name__)
@@ -30,11 +31,14 @@ class rooms(Resource):
     def post(self):
         Request = request.get_json()
         addRoom = room_schema.load(Request, session = db.session).data
-        if Room.query.filter_by(name = addRoom.name).count() == 0:
+        name  = addRoom.name
+        if Room.query.filter_by(name = name).count() == 0:
             db.session.add(addRoom)
             db.session.commit()
         else:
-            return {"message": "already exist"}
+            raise InvalidDataError(
+                "Room {} already exist".format(name)
+            )
 
 class room(Resource):
     @requires("room", ["Admin", "User"])
@@ -57,8 +61,11 @@ class room(Resource):
     @requires("room", ["Admin"])
     def put(self, id):
         request_data = request.get_json()
-        query = Room.query.filter_by(name = request_data['name'])
-        if query.count() > 0 and int(id) != query.first().id:
+        room = Room.query.get(id)
+        duplicate_rooms = Room.query.filter(
+            and_(Room.name == request_data['name'],
+                 Room.id != id))
+        if duplicate_rooms.count() > 0:
             raise InvalidDataError("room already exist")
         room.name = request_data['name']
         room.description = request_data['description']
