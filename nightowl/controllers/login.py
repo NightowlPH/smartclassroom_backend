@@ -33,16 +33,18 @@ class login(Resource):
             try:
                 data = jwt.decode(token, app.config['SECRET_KEY'])
                 user_log = UsersLogs.query.filter_by(username = data['username'], public_id = data['public_id'])
-                user = Users.query.filter_by(username = data['username'])
-                if user.count() == 0:
-                    raise UnauthorizedError()
+                try:
+                   user = Users.query.filter_by(username = data['username']).\
+                       one()
+                except:
+                    raise UnauthorizedError("Couldn't find user")
                 if user_log.count() == 0:
                     return {"message": "user already logged out"}
                 elif user_log.first().status != "active":
                     return {"message": "user already logged out"}
                 token = jwt.encode({'username': data['username'], 'public_id' : public_id, 'exp': datetime_now + timedelta(days = 1)}, app.config['SECRET_KEY'])
                 token = token.decode('UTF-8')
-                userType = get_user_type(user.first().id)
+                userType = user.userType
                 return {"token": token, 'userType': userType}
             except Exception as error:
                 error = str(error)
@@ -56,26 +58,28 @@ class login(Resource):
         log.debug("Request json: {}".format(request.get_json()))
         log.debug("Request headers: {}".format(request.headers))
         if not Request['username']  and not Request['password']:
-            raise UnexpectedError("username or password is not define")
+            raise UnexpectedError("username or password is not defined")
         else:
-            user = Users.query.filter_by(username = Request['username'])
-            if user.count() == 1: # CHECK IF USERNAME EXIST IN THE DATABASE
-                password = bcrypt.hashpw(Request['password'].encode('UTF-8'), user.first().userpassword.encode('UTF-8'))
-                if user.first().userpassword.encode('UTF-8') == password: # CHECK IF PASSWORD IS CORRECT
-                    userType = get_user_type(user.first().id)
-                    already_login = UsersLogs.query.filter_by(username = user.first().username)
-                    if already_login.count() == 1:
-                        update_active_user(public_id, datetime_now, already_login)
-                        token = jwt.encode({'username': user.first().username, 'public_id' : public_id, 'exp': datetime_now + timedelta(days = 1)}, app.config['SECRET_KEY'])
-                        token = token.decode('UTF-8')
-                        return {'token': token, 'userType': userType}
-                    elif already_login.count() == 0:
-                        add_active_user(user.first().username, public_id, datetime_now)
-                        token = jwt.encode({'username': user.first().username, 'public_id' : public_id, 'exp': datetime_now + timedelta(days = 1)}, app.config['SECRET_KEY'])
-                        token = token.decode('UTF-8')
-                        return {'token': token, 'userType': userType}
-                else:
-                    raise UnauthorizedError("Wrong password")
+            try:
+                user = Users.query.filter_by(username = Request['username']).\
+                    one()
+            except:
+                raise UnauthorizedError("User does not exist")
+            password = bcrypt.hashpw(Request['password'].encode('UTF-8'),
+                                     user.userpassword.encode('UTF-8'))
+            if user.userpassword.encode('UTF-8') == password: # CHECK IF PASSWORD IS CORRECT
+                userType = user.userType
+                already_login = UsersLogs.query.filter_by(username = user.username)
+                if already_login.count() == 1:
+                    update_active_user(public_id, datetime_now, already_login)
+                    token = jwt.encode({'username': user.username, 'public_id' : public_id, 'exp': datetime_now + timedelta(days = 1)}, app.config['SECRET_KEY'])
+                    token = token.decode('UTF-8')
+                    return {'token': token, 'userType': userType}
+                elif already_login.count() == 0:
+                    add_active_user(user.username, public_id, datetime_now)
+                    token = jwt.encode({'username': user.username, 'public_id' : public_id, 'exp': datetime_now + timedelta(days = 1)}, app.config['SECRET_KEY'])
+                    token = token.decode('UTF-8')
+                    return {'token': token, 'userType': userType}
             else:
                 raise UnauthorizedError("No user matching that name.")
 
@@ -116,28 +120,4 @@ def update_active_user(public_id, time_login, user):
     user.one().status = "active"
     db.session.commit()
 
-def get_user_type(user_id):
-    group_permission = []
-    member = GroupMember.query.filter_by(user_id = user_id).all()
-    print(member)
-    if member == None:
-        return "Guest"
-    for queried_data in member:
-        group = Group.query.filter_by(id = queried_data.group_id).first()
-        permission = Permission.query.filter_by(id = group.permission_id).first()
-        print(permission.name)
-        group_permission.append(permission.name)
-    print(group_permission,"==>")
-    try:
-        group_permission.index('Admin')
-        return "Admin"
-    except Exception as error:
-        error = str(error)
-        print(error)
-    try:
-        group_permission.index('User')
-        return "User"
-    except Exception as error:
-        error = str(error)
-        print(error)
-    return "Guest"
+

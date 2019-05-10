@@ -1,98 +1,80 @@
-from flask import Flask, redirect, url_for, request,render_template,flash
-from ..exceptions import UnauthorizedError, UnexpectedError
+from flask import Flask, redirect, url_for, request,render_template,flash, g
+from ..exceptions import UnauthorizedError, UnexpectedError, InvalidDataError
 from flask import Blueprint
 from nightowl.app import db
-from ..auth.authentication import token_required
+from ..auth.authentication import requires
 from flask_restful import Resource
 
 from nightowl.schema.room import RoomSchema
-
 from nightowl.models.room import Room
 from nightowl.models.groupAccess import GroupAccess
 from nightowl.models.roomStatus import RoomStatus
+from sqlalchemy import and_
+import logging
+
+log = logging.getLogger(__name__)
 
 room_schema = RoomSchema(only = ( 'id', 'name', 'description' ))
 
 class rooms(Resource):
-    @token_required
-    def get(current_user, self):
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
-            allRoom = []
-            rooms = Room.query.all()
-            for queried_room in rooms:
-                data = room_schema.dump(queried_room).data
-                data['groups'] = GroupAccess.query.filter_by(room_id = queried_room.id).count()
-                allRoom.append(data)
-            return {"rooms": allRoom}
-        else:
-            raise UnauthorizedError()
+    @requires("any", ["Admin", "User"])
+    def get(self):
+        rooms = g.current_user.getAccessibleRooms(["User", "Admin"])
+        allRooms = []
+        for room in rooms:
+            data = room_schema.dump(room).data
+            data['groups'] = len(room.group_access)
+            allRooms.append(data)
+        return {"rooms": allRooms}
 
-    @token_required
-    def post(current_user, self):
-        if current_user['userType'] == "Admin":
-            Request = request.get_json()
-            addRoom = room_schema.load(Request, session = db.session).data
-            if Room.query.filter_by(name = addRoom.name).count() == 0:
-                db.session.add(addRoom)
-                db.session.commit()
-            else:
-                return {"message": "already exist"}
+    @requires("global", ["Admin"])
+    def post(self):
+        Request = request.get_json()
+        addRoom = room_schema.load(Request, session = db.session).data
+        name  = addRoom.name
+        if Room.query.filter_by(name = name).count() == 0:
+            db.session.add(addRoom)
+            db.session.commit()
         else:
-            raise UnauthorizedError()
+            raise InvalidDataError(
+                "Room {} already exist".format(name)
+            )
 
 class room(Resource):
-    @token_required
-    def get(current_user, self, id):
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
-            query = Room.query.filter_by(id = id)
-            if query.count() != 0:
-                room = room_schema.dump(query.first()).data
-                return {"data":room}
-            else:
-                return {"data": []}
-        else:
-            raise UnauthorizedError()
+    @requires("room", ["Admin", "User"])
+    def get(self, id):
+        room = Room.query.get(id)
+        data = room_schema.dump(room).data
+        return {"data": data}
 
 
-    @token_required
-    def delete(current_user, self, id):
-        if current_user['userType'] == "Admin":
-            if RoomStatus.query.filter_by(room_id = id).count() != 0:
-                return {"message": "please remove devices before you delete room"}
-            if GroupAccess.query.filter_by(group_id = id).count() !=0:
-                GroupAccess.query.filter_by(group_id = id).delete()
-            Room.query.filter_by(id = id).delete()
-            db.session.commit()
-            return {"response":'user successfully deleted'}
-        else:
-            raise UnauthorizedError()
+    @requires("room", ["Admin"])
+    def delete(self, id):
+        room = Room.query.get(id)
+        if RoomStatus.query.filter_by(room_id = room.id).count() != 0:
+            raise InvalidDataError("please remove devices before you delete room")
+        GroupAccess.query.filter_by(room_id = room.id).delete()
+        db.session.delete(room)
+        db.session.commit()
+        return {"response":'user successfully deleted'}
 
-    @token_required
-    def put(current_user, self, id):
-        if current_user['userType'] == "Admin":
-            request_data = request.get_json()
-
-            query = Room.query.filter_by(name = request_data['name'])
-            if query.count() > 0 and int(id) != query.first().id:
-                return{"message": "room already exist"}
-            else:
-                query = Room.query.filter_by(id = id).one()
-                query.name = request_data['name']
-                query.description = request_data['description']
-                db.session.commit()
-        else:
-            raise UnauthorizedError()
+    @requires("room", ["Admin"])
+    def put(self, id):
+        request_data = request.get_json()
+        room = Room.query.get(id)
+        duplicate_rooms = Room.query.filter(
+            and_(Room.name == request_data['name'],
+                 Room.id != id))
+        if duplicate_rooms.count() > 0:
+            raise InvalidDataError("room already exist")
+        room.name = request_data['name']
+        room.description = request_data['description']
+        db.session.commit()
 
 
 class roomDetails(Resource): # THIS IS USER IN NAVBAT
-    @token_required
-    def get(current_user, self, id):
-        if current_user == "Admin" or current_user == "User":
-            query = Room.query.filter_by(id = id)
-            if query.count() != 0:
-                room = room_schema.dump(query.first()).data
-                return {"data":room}
-            else:
-                return {"data": []}
-        else:
-            raise UnauthorizedError()
+    @requires("room", ["Admin", "User"])
+    def get(self, id):
+        room = Room.query.get(id)
+        data = room_schema.dump(room).data
+        return {"data":data}

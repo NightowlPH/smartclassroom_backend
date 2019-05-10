@@ -88,13 +88,13 @@ api.add_resource(devices, '/devices')
 api.add_resource(device, '/device/<int:id>')
 
 api.add_resource(roomStatus, '/RoomStatus')
-api.add_resource(RoomStatusByID, '/roomStatus/<int:room_status_id>')
-api.add_resource(GetDeviceToAdd, '/getDeviceToAdd/<int:room_id>')
+api.add_resource(RoomStatusByID, '/roomStatus/<int:id>')
+api.add_resource(GetDeviceToAdd, '/getDeviceToAdd/<int:id>')
 
 api.add_resource(AllRemoteDesign, '/remoteDesign')
 
-api.add_resource(AllRoomStatusByID, '/roomStatusByID/<int:room_status_id>')
+api.add_resource(AllRoomStatusByID, '/roomStatusByID/<int:id>')
 api.add_resource(AllRoomStatus, '/roomsStatus')# MOBILE & OTHER
 api.add_resource(RoomStatusByRoomID, '/roomDevices/<int:id>')
-api.add_resource(AddDeviceToRoom, '/addRoomDevice/<int:room_id>')
+api.add_resource(AddDeviceToRoom, '/addRoomDevice/<int:id>')
 api.add_resource(Room_control_real_time_data, '/checkRoomControl')

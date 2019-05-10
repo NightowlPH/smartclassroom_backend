@@ -1,8 +1,8 @@
-from flask import Flask, redirect, url_for, request,render_template,flash
-from ..exceptions import UnauthorizedError, UnexpectedError
+from flask import Flask, redirect, url_for, request,render_template,flash, g
+from ..exceptions import UnauthorizedError, UnexpectedError, InvalidDataError
 from flask import Blueprint
 from nightowl.app import db
-from ..auth.authentication import token_required
+from ..auth.authentication import requires
 from flask_restful import Resource
 import jwt
 
@@ -12,107 +12,77 @@ from nightowl.models.usersLogs import UsersLogs
 from nightowl.models.users import Users
 from nightowl.schema.permission import PermissionSchema
 from nightowl.app import app
+from sqlalchemy import and_
 
 
 class permissions(Resource):
-    @token_required
-    def get(current_user, self):
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
-            allPermission = []
-            permission_schema = PermissionSchema(only = ('id', 'name', 'description'))
-            permission = Permission.query.all()
-            for queried_permission in permission:
-                allPermission.append(permission_schema.dump(queried_permission).data)
-            return {"permissions": allPermission}
-        else:
-            raise UnauthorizedError()
+    @requires("global", ["Admin"])
+    def get(self):
+        allPermission = []
+        permission_schema = PermissionSchema(only = ('id', 'name', 'description'))
+        permission = Permission.query.all()
+        for queried_permission in permission:
+            allPermission.append(permission_schema.dump(queried_permission).data)
+        return {"permissions": allPermission}
 
-    @token_required
-    def post(current_user, self):
-        if current_user['userType'] == "Admin":
-            permissions_schema = PermissionSchema()
+    @requires("global", ["Admin"])
+    def post(self):
+        permissions_schema = PermissionSchema()
 
-            Request = request.get_json()
-            addPermission = permissions_schema.load(Request, session = db.session).data
-            if Permission.query.filter_by(name = addPermission.name).count() == 0:
-                db.session.add(addPermission)
-                db.session.commit()
-            else:
-                return {"message": "already exist"}
+        Request = request.get_json()
+        addPermission = permissions_schema.load(Request, session = db.session).data
+        name = addPermission.name
+        if Permission.query.filter_by(name = name).count() == 0:
+            db.session.add(addPermission)
+            db.session.commit()
         else:
-            raise UnauthorizedError()
+            raise InvalidDataError(
+                "Permission {} already exist".format(name)
+            )
 
 class permission(Resource):
-    @token_required
-    def delete(current_user, self, id):
-        if current_user['userType'] == "Admin":
-            if GroupAccess.query.filter_by(permission_id = id).count() != 0:
-                GroupAccess.query.filter_by(user_id = id).delete()
-            Permission.query.filter_by(id = id).delete()
+    @requires("global", ["Admin"])
+    def delete(self, id):
+        if GroupAccess.query.filter_by(permission_id = id).count() != 0:
+            GroupAccess.query.filter_by(user_id = id).delete()
+        Permission.query.filter_by(id = id).delete()
+        db.session.commit()
+        return {"response":'permission successfully deleted'}
+
+    @requires("global", ["Admin"])
+    def get(self, id):
+        permission_schema = PermissionSchema(only = ('name', 'description'))
+        query = Permission.query.filter_by(id = id)
+
+        if query.count() != 0:
+            permission = permission_schema.dump(query.first()).data
+            return {"data": permission}
+        else:
+            return {"data": []}
+
+    @requires("global", ["Admin"])
+    def put(self, id):
+        request_data = request.get_json()
+
+        duplicate_perms = Permission.query.filter(
+            and_(Permission.name == request_data['name'],
+                 Permission.id != id))
+        if duplicate_perms.count() > 0:
+            raise InvalidDataError("permission already exist")
+        else:
+            query = Permission.query.get(id)
+            query.name = request_data['name']
+            query.description = request_data['description']
             db.session.commit()
-            return {"response":'permission successfully deleted'}
-        else:
-            raise UnauthorizedError()
-
-    @token_required
-    def get(current_user, self, id):
-        if current_user['userType'] == "Admin" or current_user['userType'] == "User":
-            permission_schema = PermissionSchema(only = ('name', 'description'))
-            query = Permission.query.filter_by(id = id)
-
-            if query.count() != 0:
-                permission = permission_schema.dump(query.first()).data
-                return {"data": permission}
-            else:
-                return {"data": []}
-        else:
-            raise UnauthorizedError()
-
-    @token_required
-    def put(current_user, self, id):
-        if current_user['userType'] == "Admin":
-            request_data = request.get_json()
-
-            query = Permission.query.filter_by(name = request_data['name'])
-            if query.count() > 0 and int(id) != query.first().id:
-                return{"message": "permission already exist"}
-            else:
-                query = Permission.query.filter_by(id = id).one()
-                query.name = request_data['name']
-                query.description = request_data['description']
-                db.session.commit()
-        else:
-            raise UnauthorizedError()
 
 
 
 class getAllPer(Resource):
+    @requires("global", ["Admin"])
     def get(self):
-        token = None
-        if 'x-access-token' in request.headers:
-            token = request.headers['x-access-token']
-
-        if not token:
-            return jsonify({'message' : 'token is missing'})
-
-        try:
-            data = jwt.decode(token, app.config['SECRET_KEY'])
-            active_user = UsersLogs.query.filter_by(public_id = data['public_id'], username = data['username']).first()
-            print(active_user)
-            user = Users.query.filter_by(username = active_user.username)
-            if user.first() == None:
-                raise UnauthorizedError()
-            if user.count() == 1:
-                allPermission = []
-                permission_schema = PermissionSchema(only = ('id', 'name', 'description'))
-                permission = Permission.query.all()
-                for queried_permission in permission:
-                    allPermission.append(permission_schema.dump(queried_permission).data)
-                return {"permissions": allPermission}
-        except Exception as error:
-            error = str(error)
-            print(error)
-            if error == "Signature has expired":
-                raise UnexpectedError({"message": "your token has been expired"})
-            else:
-                return 500
+        allPermission = []
+        permission_schema = PermissionSchema(only = ('id', 'name', 'description'))
+        permission = Permission.query.all()
+        for queried_permission in permission:
+            allPermission.append(permission_schema.dump(queried_permission).data)
+        return {"permissions": allPermission}
