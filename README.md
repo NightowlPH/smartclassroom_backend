@@ -7,7 +7,7 @@ For more information see See https://wiki.foundationu.com/nightowl/smart-classro
 
 ## Installation
 * clone the repository
-* install mariadb-server pip3-virtualenv virtualenvwrapper and python3
+* install mariadb-server mosquitto pip3-virtualenv virtualenvwrapper and python3
 * make a virtual environment with `mkvirtualenv smartclassroom`
 * activate your virtual environment with `workon smartclassroom`
 * run `pip install -r requirements.txt` to install the required packages
@@ -16,9 +16,9 @@ For more information see See https://wiki.foundationu.com/nightowl/smart-classro
 * create a user and password in mysql and a database "smartclassroom" owned by that user
 * make a directory "instance" inside the smartclassroom_backend folder
 * copy config.py to it
-* add a setting to config.py `SQLALCHEMY_URI = "mysql://<user>:<password>@localhost/smartclassroom"`
-* run `flask db migrate` to update your database
-* If this is the first time, you can load a basic database with `python run.py insert_test_data`
+* add a setting to config.py `SQLALCHEMY_DATABASE_URI = "mysql+pymysql://<user>:<password>@localhost/smartclassroom"`
+* run `flask db upgrade` to update your database
+* If this is the first time, you can load a basic database with `python load_data.py`
 
 ## More info
 

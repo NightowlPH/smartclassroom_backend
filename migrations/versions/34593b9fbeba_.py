@@ -40,7 +40,7 @@ def upgrade():
                            "INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE "
                            "REFERENCED_TABLE_NAME='permission' AND "
                            "TABLE_NAME='group';").fetchone()
-        op.drop_constraint(row[0])
+        op.drop_constraint(row[0], 'group', type_='foreignkey')
     op.drop_column('group', 'permission_id')
     # ### end Alembic commands ###
 
