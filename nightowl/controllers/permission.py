@@ -1,5 +1,5 @@
 from flask import Flask, redirect, url_for, request,render_template,flash, g
-from ..exceptions import UnauthorizedError, UnexpectedError
+from ..exceptions import UnauthorizedError, UnexpectedError, InvalidDataError
 from flask import Blueprint
 from nightowl.app import db
 from ..auth.authentication import requires
@@ -12,6 +12,7 @@ from nightowl.models.usersLogs import UsersLogs
 from nightowl.models.users import Users
 from nightowl.schema.permission import PermissionSchema
 from nightowl.app import app
+from sqlalchemy import and_
 
 
 class permissions(Resource):
@@ -60,11 +61,13 @@ class permission(Resource):
     def put(self, id):
         request_data = request.get_json()
 
-        query = Permission.query.filter_by(name = request_data['name'])
-        if query.count() > 0 and int(id) != query.first().id:
-            return{"message": "permission already exist"}
+        duplicate_perms = Permission.query.filter(
+            and_(Permission.name == request_data['name'],
+                 Permission.id != id))
+        if duplicate_perms.count() > 0:
+            raise InvalidDataError("permission already exist")
         else:
-            query = Permission.query.filter_by(id = id).one()
+            query = Permission.query.get(id)
             query.name = request_data['name']
             query.description = request_data['description']
             db.session.commit()
