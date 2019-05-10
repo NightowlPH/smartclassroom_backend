@@ -31,11 +31,14 @@ class rooms(Resource):
     def post(self):
         Request = request.get_json()
         addRoom = room_schema.load(Request, session = db.session).data
-        if Room.query.filter_by(name = addRoom.name).count() == 0:
+        name  = addRoom.name
+        if Room.query.filter_by(name = name).count() == 0:
             db.session.add(addRoom)
             db.session.commit()
         else:
-            return {"message": "already exist"}
+            raise InvalidDataError(
+                {"message": "Room {} already exist".format(name)}
+            )
 
 class room(Resource):
     @requires("room", ["Admin", "User"])

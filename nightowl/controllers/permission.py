@@ -31,11 +31,14 @@ class permissions(Resource):
 
         Request = request.get_json()
         addPermission = permissions_schema.load(Request, session = db.session).data
-        if Permission.query.filter_by(name = addPermission.name).count() == 0:
+        name = addPermission.name
+        if Permission.query.filter_by(name = name).count() == 0:
             db.session.add(addPermission)
             db.session.commit()
         else:
-            return {"message": "already exist"}
+            raise InvalidDataError(
+                {"message": "Permission {} already exist".format(name)}
+            )
 
 class permission(Resource):
     @requires("global", ["Admin"])
