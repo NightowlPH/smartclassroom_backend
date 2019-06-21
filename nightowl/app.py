@@ -31,7 +31,7 @@ from nightowl.controllers.remoteDesign import AllRemoteDesign
 from nightowl.controllers.devices import devices, device
 from nightowl.controllers.login import login,logout
 from nightowl.controllers.roomStatus import roomStatus, RoomStatusByID, GetDeviceToAdd, AllRoomStatusByID, AddDeviceToRoom,Room_control_real_time_data,AllRoomStatus,RoomStatusByRoomID
-from nightowl.controllers.users import user, users, getUserProfile, editProfile, changePassword, Get_account_photo
+from nightowl.controllers.users import user, users, getUserProfile, editProfile, changePassword, Get_account_photo,AdminChangeUserPassword
 from nightowl.controllers.permission import permission, permissions, getAllPer
 from nightowl.controllers.group import groups, group, groupDetails
 from nightowl.controllers.groupMember import groupMember,shwNotMem,deleteMember
@@ -49,6 +49,7 @@ api.add_resource(users, '/users','/users/')
 api.add_resource(user, '/user/<int:id>')
 api.add_resource(editProfile, '/editProfile')
 api.add_resource(Get_account_photo, '/account/photo')
+api.add_resource(AdminChangeUserPassword, '/user/change-password/<int:id>')
 
 api.add_resource(permissions, '/permissions')
 api.add_resource(permission, '/permission/<int:id>')

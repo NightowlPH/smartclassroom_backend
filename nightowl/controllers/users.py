@@ -159,3 +159,16 @@ class changePassword(Resource):
         user.one().userpassword = new_password
         db.session.commit()
         return {'message': 'your password is successfully changed'}
+
+class AdminChangeUserPassword(Resource):
+    @requires("global", ["Admin"])
+    def put(self, id):
+        user = Users.query.filter_by(id = id)
+        if user is None:
+            raise NotFoundError("User {} was not found".format(id))
+        data = request.get_json()
+        if len(data['new_password']) < 6:
+            return {"message": "password must be at least 6 characters"}
+        new_password = bcrypt.hashpw(data['new_password'].encode('UTF-8'), bcrypt.gensalt()).decode('utf-8')
+        user.one().userpassword = new_password
+        db.session.commit()
