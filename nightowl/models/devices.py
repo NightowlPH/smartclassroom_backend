@@ -11,6 +11,7 @@ class Devices(db.Model):
   remote_design_id = db.Column(db.Integer, ForeignKey('remote_design.id'))
   remote_design = db.relationship("RemoteDesign", backref = "devices")
 
-  def __init__(self, name, description):
+  def __init__(self, name, description, remote_design_id):
     self.name = name
     self.description = description
+    self.remote_design_id = remote_design_id
