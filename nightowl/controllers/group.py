@@ -25,7 +25,7 @@ class groups(Resource):
         allGroup = []
         group = Group.query.all()
         for queried_group in group:
-            data = groups_schema.dump(queried_group).data
+            data = groups_schema.dump(queried_group)
             data['members'] = GroupMember.query.filter_by(group_id = queried_group.id).count()
             data['permission_name'] = queried_group.permission.name
             allGroup.append(data)
@@ -63,7 +63,7 @@ class group(Resource):
         groups_schema = GroupSchema(only=('id','name', 'description', "permission_id"))
         query = Group.query.filter_by(id = id)
         if query.count() != 0:
-            group = groups_schema.dump(query.first()).data
+            group = groups_schema.dump(query.first())
             group['permission_name'] = query.first().permission.name
             return {"data": group}
         else:
@@ -97,7 +97,7 @@ class groupDetails(Resource): # THIS IS USER IN NAVBAT
         groups_schema = GroupSchema(only=('id','name', 'description'))
         query = Group.query.filter_by(id = id)
         if query.count() != 0:
-            group = groups_schema.dump(query.first()).data
+            group = groups_schema.dump(query.first())
             return {"data": group}
         else:
             return {"data": []}

@@ -16,7 +16,7 @@ class activeUsers(Resource):
         active_user = []
         user = UsersLogs.query.all()
         for queried_user in user:
-            data = users_logs_schema.dump(queried_user).data
+            data = users_logs_schema.dump(queried_user)
             data['last_request_time'] = datetime.strftime(queried_user.last_request_time,'%Y-%m-%d %I:%M %p')
             data['time_login'] = datetime.strftime(queried_user.time_login,'%Y-%m-%d %I:%M %p')
             active_user.append(data)
