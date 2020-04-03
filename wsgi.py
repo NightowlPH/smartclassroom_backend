@@ -1,4 +1,4 @@
-from werkzeug.wsgi import DispatcherMiddleware
+#from werkzeug.wsgi import DispatcherMiddleware
 from nightowl.app import app as application
 
 def simple(env, resp):

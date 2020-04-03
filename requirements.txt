@@ -11,3 +11,4 @@ Flask-JWT
 bcrypt
 flask-mqtt
 blinker
+Werkzeug=0.15.5
